@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Main
 """
@@ -12,4 +13,3 @@ if __name__ == "__main__":
         win = MainWin()
         win.mainloop()
     
-

@@ -3,7 +3,7 @@ Affichage de la Fenêtre Principale
 '''
 import tkinter as tk
 import time
-from namewin import nameWin
+#from namewin import nameWin
 from tkinter import messagebox
 
 class MainWin(tk.Tk):
@@ -173,7 +173,8 @@ class MainWin(tk.Tk):
       self.Sauvegarde()
 
   def Sauvegarde(self) :
-    nameWin(self)
+    pass
+    #nameWin(self)
       
 
   def afficher_historique(self, event) :

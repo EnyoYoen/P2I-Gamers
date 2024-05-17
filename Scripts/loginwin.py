@@ -1,8 +1,8 @@
 """
-Affichage de la fênetre de connexion
+Affichage de la fÃªnetre de connexion
 """
 import tkinter as tk
-import mysql.connector
+#import mysql.connector
 
 class LoginWin(tk.Tk):
     def __init__(self) -> None:
