@@ -99,6 +99,58 @@ class Database:
 		return self.sql(sql, [idUser])[0]
 
 
+	def add_paquet(self, size):
+		"""Ajoute un paquet de taille size"""
+		sql = "INSERT INTO Paquets (taille) VALUES (%s)"
+		self.sql(sql, [size])
+		self.save()
+
+	def add_sensor_type(self, type, manufacturer, name):
+		"""Ajoute un type de capteur"""
+		sql = "INSERT INTO TypeCapteurs (type, fabricant, nom) VALUES (%s, %s, %s)"
+		self.sql(sql, [type, manufacturer, name])
+		self.save()
+
+	def add_sensor(self, idPlacement, idDispositif, installDate, uninstallDate = None):
+		"""Ajoute un capteur"""
+		if uninstallDate is None:
+			sql = "INSERT INTO Capteurs (idPlacement, idDispositif, dateInstal) VALUES (%s, %s)"
+			self.sql(sql, [idPlacement, idDispositif, installDate])
+		else:	
+			sql = "INSERT INTO Capteurs (idPlacement, idDispositif, dateInstal, dateDesinstal) VALUES (%s, %s, %s)"
+			self.sql(sql, [idPlacement, idDispositif, installDate, uninstallDate])
+		self.save()
+
+	def add_contraption(self, name):
+		"""Ajoute un dispositif"""
+		sql = "INSERT INTO Dispositifs (nom) VALUES (%s)"
+		self.sql(sql, [name])
+		self.save()
+
+	def add_mesure_simple(self, idCapteur, date, value, idPaquet, idDonneeMouvement):
+		"""Ajoute une mesure simple"""
+		sql = "INSERT INTO MesuresSimples (idCapteur, date, valeur, idPaquet, idDonneeMouvement) VALUES (%s, %s, %s, %s, %s)"
+		self.sql(sql, [idCapteur, date, value, idPaquet, idDonneeMouvement])
+		self.save()
+
+	def add_mesure_vect(self, idCapteur, date, x, y, z, idPaquet, idDonneeMouvement):
+		"""Ajoute une mesure vectorielle"""
+		sql = "INSERT INTO MesuresVect (idCapteur, date, X, Y, Z, idPaquet, idDonneeMouvement) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+		self.sql(sql, [idCapteur, date, x, y, z, idPaquet, idDonneeMouvement])
+		self.save()
+
+	def add_user(self, name, password, height):
+		"""Ajoute un utilisateur"""
+		sql = "INSERT INTO Utilisateurs (nom, mdp, taille) VALUES (%s, %s, %s)"
+		self.sql(sql, [name, password, height])
+		self.save()
+
+	def add_movement_data(self, idUser, idDisposition, date, name):
+		"""Ajoute un mouvement"""
+		sql = "INSERT INTO Mouvements (idUtilisateur, idDisposition, date, nom) VALUES (%s, %s, %s, %s)"
+		self.sql(sql, [idUser, idDisposition, date, name])
+		self.save()
+
 
 if __name__ == "__main__":
 	db = Database()
