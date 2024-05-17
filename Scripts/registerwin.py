@@ -57,12 +57,14 @@ class RegisterWin(tk.Tk):
 
     def register_user(self, event):
 
-        if self.password_conf_entry.get() == self.password_entry.get() and self.password_conf_entry.get():
-            ... #MeTre dans la base de donnée
+        if not self.password_conf_entry.get():
+            tk.messagebox.showerror(self, text='Le mot de passe ne peut pas être vide ')
+        elif self.password_conf_entry.get() == self.password_entry.get():
+            ... #Metre dans la base de donnée
             self.queue[0]='connected'
             self.destroy()
         else:
-            tk.messagebox(self)
+            tk.messagebox.showerror(self, text='Les mots de passes ne correspondent pas')
 
     def login(self, event):
         self.destroy()
