@@ -1,15 +1,22 @@
-# -*- coding: utf-8 -*-
 """
 Main
 """
 from mainwin import MainWin
 from loginwin import LoginWin
+from registerwin import RegisterWin
 
 
 if __name__ == "__main__":
-    win = LoginWin()
-    win.mainloop()
-    if win:
+    
+    queue = []
+    while not queue or queue == 'register':
+        win = LoginWin(queue)
+        win.mainloop()
+        if queue[0] == 'register':
+            win = RegisterWin(queue) 
+            win.mainloop()
+    if queue[0] == 'connected':
         win = MainWin()
         win.mainloop()
     
+
