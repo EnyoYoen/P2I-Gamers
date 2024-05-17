@@ -10,11 +10,13 @@ import numpy as np
 
 mvt_exp = MesureVect.from_raw_list([(1,2,3,1), (4,5,6,2),(7,8,9,3)])
 data_th = {"aurevoir":MesureVect.from_raw_list([(10,9,8,1),(7,6,5,1.5),(4,3,2,2),(1,1,1,2.6),(1,2,3,3)]),
-           "coucou":MesureVect.from_raw_list([(1,2,3,1),(4,5,6,1.5),(7,8,9,2),(1,1,1,2.6),(1,2,3,3)])}
+           "coucou":MesureVect.from_raw_list([(1,2,3,1),(4,5,6,1.5),(7,8,9,2),(1,1,1,2.6),(1,2,3,3),(0,0,0,4)])}
 
 
 def interpolation(mvt, mvt_th):
-    
+    inter = []
+    for i in mvt:
+        inter.append(i)
     for i in range(len(mvt)-1):
         t1_th = mvt_th[i].dateCreation
         
@@ -33,26 +35,23 @@ def interpolation(mvt, mvt_th):
             x = (x1+x2)/2
             y = (y1+y2)/2
             z = (z1+z2)/2       
-            mvt.append(MesureVect.from_raw((x,y,z,t)))
-        else:
-            mvt.append(MesureVect.from_raw((x1,y1,z1,t1)))
-    mvt.sort(key=lambda e: e.dateCreation)
+            inter.append(MesureVect.from_raw((x,y,z,t)))
+            
+    inter.sort(key=lambda e: e.dateCreation)
 
-    return mvt
+    return inter
 
 def comparaison(data_th, mvt_exp):  
-    err_i = 1000
+    err_i = 100
     geste = ''
     
     for nom in data_th:
         res = []
+        mvt_exp_inter = []
         geste = nom 
-        mvt_th = data_th[nom]
-        mvt_th.sort(key=lambda e: e.dateCreation)
-        
+        mvt_th = data_th[nom]    
         mvt_exp_inter = interpolation(mvt_exp, mvt_th)
-        print(mvt_exp)
-        print(mvt_th)
+               
         if mvt_exp_inter != 0 :
             
             for i in range(len(mvt_exp_inter)-1):
@@ -67,25 +66,31 @@ def comparaison(data_th, mvt_exp):
                 err_x = round((100*abs(x1-x2)/x1),2)
                 err_y = round((100*abs(y1-y2)/y1),2)
                 err_z = round((100*abs(z1-z2)/z1),2)
-                moy = (err_x+err_y+err_z)/3
+                moy = (err_x + err_y + err_z)/3
                 res.append(moy)   
-            
+       
             err_f = np.mean(res)
-                        
+                    
             if err_f < err_i:
                 err_i = err_f
-                geste = nom 
-            
-            if err_i >50:
-                print("faux mvt")
-                
+                geste = nom    
         else:
-            print("mvt non enregistré")
+            print("Aucun mouvement enregistré, recommencer")
     
+    err_i = round(err_i,2)
+    if err_i >50:
+        print("Mouvement non reconnu, recommencer")  
+
     return geste, err_i
+        
         
         
 geste, err = comparaison(data_th, mvt_exp)   
 
-print(geste, err)
+print(f'Le geste {geste} a été effectué avec {100-err}% de réussite.')
     
+
+
+
+
+
