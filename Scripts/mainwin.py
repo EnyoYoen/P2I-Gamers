@@ -17,9 +17,6 @@ class MainWin(tk.Tk):
     """
     Création des widgets
     """
-    #Label toute en haut
-    self.label = tk.Label(self, text="Hello World")
-    self.label.grid(column=3,row=0)
 
     #Frame historique
     self.frame_historique = tk.Frame(self)

@@ -10,14 +10,14 @@ class LoginWin(tk.Tk):
         super().__init__()
         self.queue = queue
         self.title('G.M.T. Connexion')
-        self.geometry('310x100')
+        self.geometry('250x100')
         self.resizable(width=False, height=False)
         self.creer_widgets()
         self.protocol("WM_DELETE_WINDOW", self.quitter)
 
     def creer_widgets(self) -> None:
         # username
-        self.username_label = tk.Label(self, text="Username:")
+        self.username_label = tk.Label(self, text="Nom d'utilisateur:")
         self.username_label.grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
 
         self.username_entry = tk.Entry(self)
