@@ -76,6 +76,8 @@ def comparaison(data_th, mvt_exp):
                 geste = nom    
         else:
             print("Aucun mouvement enregistré, recommencer")
+    
+    err_i = round(err_i,2)
     if err_i >50:
         print("Mouvement non reconnu, recommencer")  
 
