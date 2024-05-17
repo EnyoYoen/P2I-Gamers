@@ -68,21 +68,27 @@ def comparaison(data_th, mvt_exp):
                 err_z = round((100*abs(z1-z2)/z1),2)
                 moy = (err_x + err_y + err_z)/3
                 res.append(moy)   
-            
+       
             err_f = np.mean(res)
-                        
+                    
             if err_f < err_i:
                 err_i = err_f
                 geste = nom    
         else:
-            print("mvt non enregistré")
+            print("Aucun mouvement enregistré, recommencer")
     if err_i >50:
-        print("faux mvt")  
+        print("Mouvement non reconnu, recommencer")  
 
     return geste, err_i
+        
         
         
 geste, err = comparaison(data_th, mvt_exp)   
 
 print(f'Le geste {geste} a été effectué avec {100-err} de réussite.')
     
+
+
+
+
+
