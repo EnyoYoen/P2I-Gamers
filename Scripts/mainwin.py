@@ -3,7 +3,7 @@ Affichage de la Fenêtre Principale
 '''
 import tkinter as tk
 import time
-#from namewin import nameWin
+from namewin import nameWin
 from tkinter import messagebox
 
 class MainWin(tk.Tk):
@@ -33,9 +33,9 @@ class MainWin(tk.Tk):
     #Liste historique
     self.list_historique = tk.Listbox(self.frame_historique, yscrollcommand=self.scrollbar.set)
     self.list_historique.grid(column=0,row=0, sticky='nesw')
+
+    self.indice_historique = 0
     
-    for i in range(50):
-      self.list_historique.insert(tk.END, str(i) + ' - historique') #A modifier
     
     self.scrollbar.config(command = self.list_historique.yview )
 
@@ -170,11 +170,7 @@ class MainWin(tk.Tk):
     
     self.choix_sauvegarde = messagebox.askquestion(message='Voulez vous sauvegarder votre enregistrement ?', type='yesno')
     if self.choix_sauvegarde == 'yes' :
-      self.Sauvegarde()
-
-  def Sauvegarde(self) :
-    pass
-    #nameWin(self)
+      nameWin(self)
       
 
   def afficher_historique(self, event) :
