@@ -49,8 +49,12 @@ class LoginWin(tk.Tk):
         """
         Fonction de connexion
         """
-
-        if verify_user(str(self.username_entry.get()), str(self.password_entry.get())):
+        try:
+            good = verify_user(str(self.username_entry.get()), str(self.password_entry.get()))
+        except:
+            good = False
+        
+        if good:
             self.queue.insert(0, "connected")
             self.destroy()
         else:
