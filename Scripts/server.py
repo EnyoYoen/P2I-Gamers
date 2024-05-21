@@ -1,10 +1,17 @@
+from functools import partial
 import http.server
 import json
+import threading
 import database
 
 db = database.Database()
 
 class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
+	def __init__(self, event, *args, **kwargs):
+		self.event = event
+
+		super().__init__(*args, **kwargs)
+
 	def do_GET(self):
 		# Custom handling for GET requests
 		self.send_response(200)
@@ -38,7 +45,7 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 
 def run_custom_server(event):
 	server_address = ('', 8085)  # Use a custom port if needed
-	httpd = http.server.HTTPServer(server_address, CustomRequestHandler)
+	httpd = http.server.HTTPServer(server_address, partial(CustomRequestHandler, event))
 	print('Starting HTTP server...')
 	httpd.serve_forever()
 

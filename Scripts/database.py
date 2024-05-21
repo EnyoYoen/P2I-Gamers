@@ -36,13 +36,13 @@ class Database:
 	@MouvementInfo.cast
 	def list_mouvements_info(self):
 		"""Renvoie la liste de tous les mouvements preenregistres"""
-		sql = "SELECT * FROM Mouvements" # TODO !!
+		sql = "SELECT * FROM DonneesMouvements" # TODO !!
 		return self.sql(sql)
 
 	@MouvementInfo.cast_single
 	def get_mouvements_info(self, idMouvement):
 		"""Renvoie les infos associees a un mouvement idMouvement"""
-		sql = "SELECT * FROM Mouvements WHERE idMouvement=%s"
+		sql = "SELECT * FROM DonneesMouvements WHERE idMouvement=%s"
 		return self.sql(sql, [idMouvement])[0]
 
 	@MesureSimple.cast
@@ -153,7 +153,7 @@ class Database:
 
 	def add_movement_data(self, idUser, idDispositif, date, name):
 		"""Ajoute un mouvement"""
-		sql = "INSERT INTO Mouvements (idUtilisateur, idDispositif, date, nom) VALUES (%s, %s, %s, %s)"
+		sql = "INSERT INTO DonneesMouvements (idUtilisateur, idDispositif, date, nom) VALUES (%s, %s, %s, %s)"
 		self.sql(sql, [idUser, idDispositif, date, name])
 		self.save()
 
