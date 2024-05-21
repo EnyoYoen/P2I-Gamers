@@ -7,6 +7,7 @@ import time
 from tkinter import messagebox
 from dataclass import*
 import comparaison as cp
+from database import*
 
 mvt_exp = MesureVect.from_raw_list([(0,0,1,2,3,1),(1,1,4,5,6,2),(2,2,7,8,9,3)])
 data_th = {"aurevoir":MesureVect.from_raw_list([(0,3,10,9,8,1),(0,4,7,6,5,1.5),(0,5,4,3,2,2),(0,6,1,1,1,2.6),(0,7,1,2,3,3)]),
@@ -173,13 +174,10 @@ class MainWin(tk.Tk):
 		self.bouton_start = tk.Button(self, text='▶', bg='lightgreen')
 		self.bouton_start.bind('<Button-1>', self.start)
 		self.bouton_start.grid(row=11, column=3)
+	
+		text = cp.comparaison(data_th, mvt_exp) 
+		self.resultat = messagebox.showinfo(title='Info', message=text)
 		
-		geste, err = cp.comparaison(data_th, mvt_exp) 
-		text = f'Le geste {geste} a été effectué avec {100-err}% de réussite.'
-		self.resultat = messagebox.showinfo(title='Info', message=text)
-		geste, err = cp.comparaison(data_th, mvt_exp) 
-		text = f'Le geste {geste} a été effectué avec {100-err}% de réussite.'
-		self.resultat = messagebox.showinfo(title='Info', message=text)
 		self.choix_sauvegarde = messagebox.askquestion(message='Voulez vous sauvegarder votre enregistrement ?', type='yesno')
 		
 		
