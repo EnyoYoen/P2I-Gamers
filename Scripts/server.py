@@ -17,18 +17,16 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 		post_data = self.rfile.read(content_length)
 		post_body = json.loads(post_data.decode('utf-8'))
 
-		date = post_body['date']
-		idPaquet = 0
-		idDonneeMouvement = 0
+		date = post_body['time']
+		idPaquet = 1
+		idDonneeMouvement = 2
 		if post_body['type'] == 'simple':
-			for data in post_body['data']:
-				for idCapteur, value in data.items():
-					db.add_mesure_simple(self, idCapteur, date, value, idPaquet, idDonneeMouvement)
+			for idCapteur, value in post_body['data'].items():
+				db.add_mesure_simple(int(idCapteur)+1, idPaquet, idDonneeMouvement, date, value)
 
 		elif post_body['type'] == 'vector':
-			for data in post_body['data']:
-				for idCapteur, vec in data.items():
-					db.add_mesure_vect(self, idCapteur, date, *vec, idPaquet, idDonneeMouvement)
+			for idCapteur, vec in post_body['data'].items():
+				db.add_mesure_vect(int(idCapteur)+1, idPaquet, idDonneeMouvement, date, *vec)
 
 		self.send_response(200)
 		self.end_headers()
