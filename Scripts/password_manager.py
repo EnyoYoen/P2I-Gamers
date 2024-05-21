@@ -15,8 +15,13 @@ def calculate_sha256(data):
 
 
 def register_user(name, password, height):
+    liste = db.list_users()
+    for i in liste.name:
+        if i == name:
+            return False
     h_mdp = calculate_sha256(password)
     db.add_user(name, h_mdp, height)
+    return True
 
 
 def verify_user(idUser: str, mdp_ut: str) -> bool:
