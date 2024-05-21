@@ -2,6 +2,7 @@ from functools import partial
 import http.server
 import json
 import threading
+import time
 import database
 
 db = database.Database()
@@ -25,20 +26,23 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 		post_body = json.loads(post_data.decode('utf-8'))
 
 		if self.event.is_set():
-			print('Saving 1 packet')
+			print(f'Saving 1 packet, size: {len(post_body)}')
+			start = time.time()
 			idPaquet = 1
 			idDonneeMouvement = 2
-			if post_body['type'] == 'simple':
-				for data in post_body['data']:
-					date = data['time']
-					for idCapteur, value in data['values'].items():
-						db.add_mesure_simple(int(idCapteur)+1, idPaquet, idDonneeMouvement, date, value)
+			for packet in post_body:
+				date = packet['time']
 
-			elif post_body['type'] == 'vector':
-				for data in post_body['data']:
-					date = data['time']
-					for idCapteur, vec in data['values'].items():
-						db.add_mesure_vect(int(idCapteur)+1, idPaquet, idDonneeMouvement, date, *vec)
+				if packet['type'] == 'simple':
+					for idCapteur, value in packet['data'].items():
+						db.add_mesure_simple(int(idCapteur)+1, idPaquet, idDonneeMouvement, date, value, save=False)
+
+				elif packet['type'] == 'vector':
+					for idCapteur, vec in packet['data'].items():
+						db.add_mesure_vect(int(idCapteur)+1, idPaquet, idDonneeMouvement, date, *vec, save=False)
+
+			db.save()
+			print(f'-> Done, took {time.time()-start}sec')
 
 		self.send_response(200)
 		self.end_headers()
@@ -57,7 +61,7 @@ class DataServer:
 
 	def start_server(self):
 		self.server_event = threading.Event()
-		self.server_thread = threading.Thread(target=self.run_server, args=(self.server_event,))
+		self.server_thread = threading.Thread(target=self.run_server, args=(self.server_event,), daemon=True)
 		self.server_thread.start()
 
 	def run_server(self, event):
