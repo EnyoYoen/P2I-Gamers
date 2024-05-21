@@ -17,7 +17,8 @@ def enregistrer_user(idUser):
     mdp = use.password
     h_mdp = calculate_sha256(mdp)
 
-    db.add_user(use.idUtilisateur, h_mdp, use.taille)
+    use.password = h_mdp
+    # db.add_user(use.idUtilisateur, h_mdp, use.taille)
 
 
 def verifier_user(idUser):
