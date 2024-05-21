@@ -36,7 +36,7 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 		self.wfile.write(b'Ok')
 		# self.wfile.write(b'Hello, World!')
 
-def run_custom_server():
+def run_custom_server(event):
 	server_address = ('', 8085)  # Use a custom port if needed
 	httpd = http.server.HTTPServer(server_address, CustomRequestHandler)
 	print('Starting HTTP server...')

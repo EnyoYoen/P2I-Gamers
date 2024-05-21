@@ -101,7 +101,7 @@ class Database:
 	@Utilisateur.cast_single
 	def get_user_by_name(self, username):
 		"""Renvoie l'utilisateur correspondant à idUser"""
-		sql = "SELECT * FROM Utilisateurs WHERE nomUtilisateur1=%s"
+		sql = "SELECT * FROM Utilisateurs WHERE nomUtilisateur=%s"
 		return self.sql(sql, [username])[0]
 
 
