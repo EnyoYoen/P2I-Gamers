@@ -17,8 +17,3 @@ class nameWin(tk.Tk) :
     self.destroy()
     self.root.indice_historique += 1
     self.root.list_historique.insert(tk.END, str(self.root.indice_historique) + '- ' + self.nom + ' ' + str(self.root.duree_memo) + 's')
-    self.insert_bd()
-
-  def insert_bd(self) :
-    "Insertion de l'historique dans la base de donnée"
-    
