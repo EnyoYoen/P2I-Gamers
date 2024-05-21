@@ -33,13 +33,13 @@ class LoginWin(tk.Tk):
 
         # login button
         self.login_button = tk.Button(self, text="Connexion")
-        self.login_button.grid(column=1, row=3, sticky=tk.E, padx=5, pady=5)
         self.login_button.bind('<Button-1>', self.login)
-
+        self.login_button.grid(column=1, row=3, sticky=tk.E, padx=5, pady=5)
+ 
         # register button
         self.register_button = tk.Button(self, text="Enregistrement")
-        self.register_button.grid(column=0, row=3, sticky=tk.W, padx=5, pady=5)
         self.register_button.bind('<Button-1>', self.register_user)
+        self.register_button.grid(column=0, row=3, sticky=tk.W, padx=5, pady=5)
 
     def quitter(self)-> None:
         self.queue.insert(0, False)
@@ -66,10 +66,6 @@ class LoginWin(tk.Tk):
         """
         self.queue.insert(0, "register")
         self.destroy()
-
-    def recup(self, username: str, password: str):
-        pass
-
 
 if __name__ == "__main__":
     win = LoginWin([])
