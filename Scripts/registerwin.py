@@ -68,7 +68,7 @@ class RegisterWin(tk.Tk):
         elif self.password_conf_entry.get() != self.password_entry.get():
             showerror(title='Erreur', message='Les mots de passes ne correspondent pas')
         else:
-            showinfo(title='Information', message=f'Le compte a été créé \n Bienvenu {self.username_entry.get()} !')
+            showinfo(title='Information', message=f'Le compte a été créé \n Bienvenue {self.username_entry.get()} !')
             ... #Metre dans la base de donnée
             self.queue[0]='connected'
             self.destroy()
