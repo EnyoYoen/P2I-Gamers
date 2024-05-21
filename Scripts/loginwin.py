@@ -10,6 +10,7 @@ class LoginWin(tk.Tk):
     def __init__(self, queue: list) -> None:
         super().__init__()
         self.queue = queue
+        self.user = None
         self.title('G.M.T. Connexion')
         self.geometry('250x100')
         self.resizable(width=False, height=False)
@@ -49,13 +50,17 @@ class LoginWin(tk.Tk):
         """
         Fonction de connexion
         """
+        user = str(self.username_entry.get())
+        password = str(self.password_entry.get())
+        
         try:
-            good = verify_user(str(self.username_entry.get()), str(self.password_entry.get()))
+            good = verify_user(user, password)
         except:
             good = False
         
         if good:
             self.queue.insert(0, "connected")
+            self.user = user 
             self.destroy()
         else:
             showerror(title='Erreur', message="L'utilisateur et le mot passe ne correspondent pas.")

@@ -16,7 +16,9 @@ if __name__ == "__main__":
             win = RegisterWin(queue) 
             win.mainloop()
     if queue[0] == 'connected':
-        win = MainWin()
+        print(win.user)
+        win = MainWin(win.user)
         win.mainloop()
-    
+
+
 
