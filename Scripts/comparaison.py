@@ -87,4 +87,3 @@ def comparaison(data_th, mvt_exp):
 # geste, err = comparaison(data_th, mvt_exp)   
 
 # print(f'Le geste {geste} a été effectué avec {100-err}% de réussite.')
-    
