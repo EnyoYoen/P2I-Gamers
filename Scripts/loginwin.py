@@ -41,7 +41,7 @@ class LoginWin(tk.Tk):
         self.register_button.bind('<Button-1>', self.register_user)
 
     def quitter(self):
-        self.queue.append(False)
+        self.queue.insert(0, False)
         self.destroy()
 
     def login(self, event):
@@ -54,7 +54,7 @@ class LoginWin(tk.Tk):
         #username , password = recup(self.username, self.password)
         #if username == self.username and password == self.password:
         if True:
-            self.queue.append('connected')
+            self.queue.insert(0, "connected")
             self.destroy()
             return True
 
@@ -62,7 +62,7 @@ class LoginWin(tk.Tk):
         """
         Fonction de création de compte
         """
-        self.queue.append("register")
+        self.queue.insert(0, "register")
         self.destroy()
 
     def recup(self, username: str, password: str):

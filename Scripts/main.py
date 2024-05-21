@@ -9,7 +9,7 @@ from registerwin import RegisterWin
 if __name__ == "__main__":
     
     queue = []
-    while not queue or queue == 'register':
+    while not queue[0] or queue[0] == 'register':
         win = LoginWin(queue)
         win.mainloop()
         if queue[0] == 'register':
