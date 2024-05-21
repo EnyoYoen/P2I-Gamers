@@ -2,6 +2,7 @@
 Affichage de la fênetre d'enregistrement
 """
 import tkinter as tk
+from tkinter.messagebox import showerror, showwarning, showinfo
 
 
 class RegisterWin(tk.Tk):
@@ -9,10 +10,11 @@ class RegisterWin(tk.Tk):
     def __init__(self, queue) -> None:
         super().__init__()
         self.queue = queue
-        self.title('G.M.T. enregistrement')
+        self.title('G.M.T. Enregistrement')
         self.geometry('320x130')
         self.resizable(width=False, height=False)
         self.creer_widgets()
+        self.protocol("WM_DELETE_WINDOW", self.quitter)
 
     def creer_widgets(self) -> None:
         # username
@@ -56,19 +58,28 @@ class RegisterWin(tk.Tk):
         self.register_button.bind('<Button-1>', self.register_user)
 
     def register_user(self, event):
+        if not self.username_entry.get():
+            showwarning(title='Attention', message="Il faut un nom d'utilisateur")
+        elif not self.password_entry.get():
+            showerror(title='Erreur', message='Le mot de passe ne peut pas être vide ')
+        elif not self.password_conf_entry.get():
+            showwarning(title='Attention', message="Il faut remplir la confirmation de mot de passe")
 
-        if not self.password_conf_entry.get():
-            tk.messagebox.showerror(self, text='Le mot de passe ne peut pas être vide ')
-        elif self.password_conf_entry.get() == self.password_entry.get():
+        elif self.password_conf_entry.get() != self.password_entry.get():
+            showerror(title='Erreur', message='Les mots de passes ne correspondent pas')
+        else:
+            showinfo(title='Information', message=f'Le compte a été créé \n Bienvenue {self.username_entry.get()} !')
             ... #Metre dans la base de donnée
             self.queue[0]='connected'
             self.destroy()
-        else:
-            tk.messagebox.showerror(self, text='Les mots de passes ne correspondent pas')
+            
 
     def login(self, event):
         self.destroy()
 
+    def quitter(self):
+        self.destroy()
+        self.queue[0] = True
 
 
 if __name__ == '__main__':

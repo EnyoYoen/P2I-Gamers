@@ -4,7 +4,7 @@ Created on Tue May 14 08:53:00 2024
 
 @author: giaho
 """
-from Class import MesureVect 
+from dataclass import MesureVect 
 import matplotlib.pyplot as plt
 import numpy as np
 

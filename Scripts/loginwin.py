@@ -57,6 +57,9 @@ class LoginWin(tk.Tk):
             self.queue.insert(0, "connected")
             self.destroy()
             return True
+        else:
+            pass
+            #faire erreur car pas bon user/mdp
 
     def register_user(self, event):
         """
