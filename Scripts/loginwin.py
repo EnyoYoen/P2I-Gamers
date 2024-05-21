@@ -10,7 +10,11 @@ class LoginWin(tk.Tk):
     def __init__(self, queue: list) -> None:
         super().__init__()
         self.queue = queue
+<<<<<<< HEAD
         self.user = None
+=======
+        self.user_id = None
+>>>>>>> 8f98c3419b3c3a8051de840bc93a5c6cc3295f6b
         self.title('G.M.T. Connexion')
         self.geometry('250x100')
         self.resizable(width=False, height=False)
@@ -54,7 +58,12 @@ class LoginWin(tk.Tk):
         password = str(self.password_entry.get())
         
         try:
+<<<<<<< HEAD
             good = verify_user(user, password)
+=======
+            self.user_id = verify_user(str(self.username_entry.get()), str(self.password_entry.get()))
+            good = self.user_id is not None
+>>>>>>> 8f98c3419b3c3a8051de840bc93a5c6cc3295f6b
         except:
             good = False
         
