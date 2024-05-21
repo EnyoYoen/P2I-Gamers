@@ -19,10 +19,9 @@ def register_user(name, password, height):
     db.add_user(name, h_mdp, height)
 
 
-def verify_user(idUser):
-    mdp = db.get_user(idUser).password
+def verify_user(idUser: str, mdp_ut: str) -> bool:
 
-    mdp_ut = input("mot de passe: ")
+    mdp = db.get_user(idUser).password
     h_mdp_ut = calculate_sha256(mdp_ut)
     
     if h_mdp_ut == mdp:

@@ -2,11 +2,12 @@
 Affichage de la fênetre de connexion
 """
 import tkinter as tk
-
+from tkinter.messagebox import showerror
+from password_manager import verify_user
 
 class LoginWin(tk.Tk):
 
-    def __init__(self, queue) -> None:
+    def __init__(self, queue: list) -> None:
         super().__init__()
         self.queue = queue
         self.title('G.M.T. Connexion')
@@ -40,28 +41,22 @@ class LoginWin(tk.Tk):
         self.register_button.grid(column=0, row=3, sticky=tk.W, padx=5, pady=5)
         self.register_button.bind('<Button-1>', self.register_user)
 
-    def quitter(self):
+    def quitter(self)-> None:
         self.queue.insert(0, False)
         self.destroy()
 
-    def login(self, event):
+    def login(self, event) -> None:
         """
         Fonction de connexion
         """
-        self.username = str(self.username_entry.get())
-        self.password = str(self.password_entry.get())
-        #faire requetes sql
-        #username , password = recup(self.username, self.password)
-        #if username == self.username and password == self.password:
-        if True:
+
+        if verify_user(str(self.username_entry.get()), str(self.password_entry.get())):
             self.queue.insert(0, "connected")
             self.destroy()
-            return True
         else:
-            pass
-            #faire erreur car pas bon user/mdp
+            showerror(title='Erreur', message="L'utilisateur et le mot passe ne correspondent pas.")
 
-    def register_user(self, event):
+    def register_user(self, event)-> None:
         """
         Fonction de création de compte
         """
