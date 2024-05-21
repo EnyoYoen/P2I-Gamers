@@ -133,17 +133,19 @@ class Database:
 		self.sql(sql, [name])
 		self.save()
 
-	def add_mesure_simple(self, idCapteur, idPaquet, idDonneeMouvement, date, value):
+	def add_mesure_simple(self, idCapteur, idPaquet, idDonneeMouvement, date, value, save=True):
 		"""Ajoute une mesure simple"""
 		sql = "INSERT INTO MesuresSimples (idCapteur, idPaquet, idDonneeMouvement, date, valeur) VALUES (%s, %s, %s, %s, %s);"
 		self.sql(sql, [idCapteur, idPaquet, idDonneeMouvement, date, value])
-		self.save()
+		if save:
+			self.save()
 
-	def add_mesure_vect(self, idCapteur, idPaquet, idDonneeMouvement, date, x, y, z):
+	def add_mesure_vect(self, idCapteur, idPaquet, idDonneeMouvement, date, x, y, z, save=True):
 		"""Ajoute une mesure vectorielle"""
 		sql = "INSERT INTO MesuresVect (idCapteur, idPaquet, idDonneeMouvement, date, x, y, z) VALUES (%s, %s, %s, %s, %s, %s, %s);"
 		self.sql(sql, [idCapteur, idPaquet, idDonneeMouvement, date, x, y, z])
-		self.save()
+		if save:
+			self.save()
 
 	def add_user(self, name, password, height):
 		"""Ajoute un utilisateur"""
