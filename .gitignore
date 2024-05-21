@@ -1,3 +1,3 @@
 **/*.meta
 WebApp/node_modules/*
-Scripts/__pycache__/*.pyc
+Scripts/__pycache__/*

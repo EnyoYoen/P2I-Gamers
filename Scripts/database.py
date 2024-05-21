@@ -98,6 +98,12 @@ class Database:
 		sql = "SELECT * FROM Utilisateurs WHERE idUtilisateur=%s"
 		return self.sql(sql, [idUser])[0]
 
+	@Utilisateur.cast_single
+	def get_user_by_name(self, username):
+		"""Renvoie l'utilisateur correspondant à idUser"""
+		sql = "SELECT * FROM Utilisateurs WHERE nomUtilisateur1=%s"
+		return self.sql(sql, [username])[0]
+
 
 	def add_paquet(self, size):
 		"""Ajoute un paquet de taille size"""
@@ -154,5 +160,5 @@ class Database:
 
 if __name__ == "__main__":
 	db = Database()
-	a = db.list_mouvements_info()
+	a = db.get_user(3)
 	pass
