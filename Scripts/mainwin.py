@@ -177,10 +177,15 @@ class MainWin(tk.Tk):
     geste, err = cp.comparaison(data_th, mvt_exp) 
     text = f'Le geste {geste} a été effectué avec {100-err}% de réussite.'
     self.resultat = messagebox.showinfo(title='Info', message=text)
+    geste, err = cp.comparaison(data_th, mvt_exp) 
+    text = f'Le geste {geste} a été effectué avec {100-err}% de réussite.'
+    self.resultat = messagebox.showinfo(title='Info', message=text)
     self.choix_sauvegarde = messagebox.askquestion(message='Voulez vous sauvegarder votre enregistrement ?', type='yesno')
+    
     
     if self.choix_sauvegarde == 'yes' :
       self.Sauvegarde()
+      
       
 
   def Sauvegarde(self) :
