@@ -76,10 +76,12 @@ class RegisterWin(tk.Tk):
                 return
         
     def register_user(self, event):
+
         user = self.username_entry.get()
         height = self.get_height()
         password = self.password_entry.get()
         password_conf = self.password_conf_entry.get()
+
         if not user:
             showwarning(title='Attention', message="Il faut un nom d'utilisateur")
         elif not height:
@@ -90,14 +92,16 @@ class RegisterWin(tk.Tk):
             showwarning(title='Attention', message='Le mot de passe ne peut pas être vide ')
         elif not password_conf:
             showwarning(title='Attention', message="Il faut remplir la confirmation de mot de passe")
-
         elif password_conf != password:
             showerror(title='Erreur', message='Les mots de passes ne correspondent pas')
         else:
-            showinfo(title='Information', message=f'Le compte a été créé \n Bienvenue {user} !')
-            register_user(user, password, height)
-            self.queue[0]='connected'
-            self.destroy()
+
+            if register_user(user, password, height):
+                showinfo(title='Information', message=f'Le compte a été créé \n Bienvenue {user} !')
+                self.queue[0]='connected'
+                self.destroy()
+            else:
+                showerror(title='Erreur', message="Le nom d'utilisateur est déjà utilisé")
             
 
     def login(self, event):
