@@ -10,6 +10,7 @@ class RegisterWin(tk.Tk):
     def __init__(self, queue) -> None:
         super().__init__()
         self.queue = queue
+        self.user_id = None
         self.title('G.M.T. Enregistrement')
         self.geometry('320x160')
         self.resizable(width=False, height=False)
@@ -97,9 +98,11 @@ class RegisterWin(tk.Tk):
             showerror(title='Erreur', message='Les mots de passes ne correspondent pas')
         else:
 
-            if register_user(user, password, height):
+            user_id = register_user(user, password, height)
+            if user_id:
                 showinfo(title='Information', message=f'Le compte a été créé \n Bienvenue {user} !')
                 self.queue[0]='connected'
+                self.user_id = user_id
                 self.destroy()
             else:
                 showerror(title='Erreur', message="Le nom d'utilisateur est déjà utilisé")

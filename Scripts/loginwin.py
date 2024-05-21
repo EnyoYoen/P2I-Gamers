@@ -10,6 +10,7 @@ class LoginWin(tk.Tk):
     def __init__(self, queue: list) -> None:
         super().__init__()
         self.queue = queue
+        self.user_id = None
         self.title('G.M.T. Connexion')
         self.geometry('250x100')
         self.resizable(width=False, height=False)
@@ -52,7 +53,8 @@ class LoginWin(tk.Tk):
         Fonction de connexion
         """
         try:
-            good = verify_user(str(self.username_entry.get()), str(self.password_entry.get()))
+            self.user_id = verify_user(str(self.username_entry.get()), str(self.password_entry.get()))
+            good = self.user_id is not None
         except:
             good = False
         
