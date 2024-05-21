@@ -5,6 +5,12 @@ import tkinter as tk
 import time
 #from namewin import nameWin
 from tkinter import messagebox
+from dataclass import*
+import comparaison as cp
+
+mvt_exp = MesureVect.from_raw_list([(1,2,3,1), (4,5,6,2),(7,8,9,3)])
+data_th = {"aurevoir":MesureVect.from_raw_list([(10,9,8,1),(7,6,5,1.5),(4,3,2,2),(1,1,1,2.6),(1,2,3,3)]),
+           "coucou":MesureVect.from_raw_list([(1,2,3,1),(4,5,6,1.5),(7,8,9,2),(1,1,1,2.6),(1,2,3,3),(0,0,0,4)])}
 
 class MainWin(tk.Tk):
   def __init__(self):
@@ -168,9 +174,14 @@ class MainWin(tk.Tk):
     self.bouton_start.bind('<Button-1>', self.start)
     self.bouton_start.grid(row=11, column=3)
     
+    geste, err = cp.comparaison(data_th, mvt_exp) 
+    text = f'Le geste {geste} a été effectué avec {100-err}% de réussite.'
+    self.resultat = messagebox.showinfo(title='Info', message=text)
     self.choix_sauvegarde = messagebox.askquestion(message='Voulez vous sauvegarder votre enregistrement ?', type='yesno')
+    
     if self.choix_sauvegarde == 'yes' :
       self.Sauvegarde()
+      
 
   def Sauvegarde(self) :
     pass
