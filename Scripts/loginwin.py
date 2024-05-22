@@ -12,8 +12,8 @@ class LoginWin(tk.Tk):
         self.queue = queue
         self.user_id = None
         self.title('G.M.T. Connexion')
-        self.geometry('250x100')
-        self.resizable(width=False, height=False)
+        # self.geometry('250x100')
+        # self.resizable(width=False, height=False)
         self.creer_widgets()
         self.protocol("WM_DELETE_WINDOW", self.quitter)
 
