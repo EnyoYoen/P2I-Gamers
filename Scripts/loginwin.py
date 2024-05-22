@@ -50,11 +50,11 @@ class LoginWin(tk.Tk):
         """
         Fonction de connexion
         """
-        user = str(self.username_entry.get())
-        password = str(self.password_entry.get())
+        user = str(self.username_entry.get()).strip()
+        password = str(self.password_entry.get()).strip()
         
         try:
-            self.user_id = verify_user(str(self.username_entry.get()), str(self.password_entry.get()))
+            self.user_id = verify_user(user, password)
             good = self.user_id is not None
         except:
             good = False
