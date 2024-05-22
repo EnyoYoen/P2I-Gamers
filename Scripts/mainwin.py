@@ -14,17 +14,11 @@ mvt_exp = MesureVect.from_raw_list([(0,0,1,2,3,1),(1,1,4,5,6,2),(2,2,7,8,9,3)])
 data_th = {"aurevoir":MesureVect.from_raw_list([(0,3,10,9,8,1),(0,4,7,6,5,1.5),(0,5,4,3,2,2),(0,6,1,1,1,2.6),(0,7,1,2,3,3)]),
 					 "coucou":MesureVect.from_raw_list([(0,13,1,2,3,1),(0,12,4,5,6,1.5),(0,11,7,8,9,2),(0,10,1,1,1,2.6),(0,9,1,2,3,3),(0,8,0,0,0,4)])}
 
-<<<<<<< HEAD
 class MainWin(tk.Tk, DataServer):
-	def __init__(self,user):
-=======
-class MainWin(tk.Tk):
-	def __init__(self, user_id):
->>>>>>> 8f98c3419b3c3a8051de840bc93a5c6cc3295f6b
+	def __init__(self,user_id):
 		super().__init__()
-		self.user_id = user_id
 		DataServer.__init__(self)
-		self.user = user
+		self.user_id = user_id
 
 		self.title('G.M.T.')
 		#self.geometry('500x800')
