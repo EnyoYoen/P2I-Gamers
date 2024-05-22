@@ -21,6 +21,12 @@ class MainWin(tk.Tk, DataServer):
 		self.user_id = user_id
 
 		self.title('G.M.T.')
+        # Obtenez la résolution de l'écran
+		screen_width = self.winfo_screenwidth()
+		screen_height = self.winfo_screenheight()
+
+        # Configurez la fenêtre pour qu'elle utilise la résolution obtenue
+		self.geometry(f"{screen_width}x{screen_height}")
 		#self.geometry('500x800')
 		self.creer_widgets()
 
