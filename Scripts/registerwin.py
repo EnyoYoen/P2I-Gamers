@@ -10,11 +10,7 @@ class RegisterWin(tk.Tk):
     def __init__(self, queue) -> None:
         super().__init__()
         self.queue = queue
-<<<<<<< HEAD
-        self.user = None
-=======
         self.user_id = None
->>>>>>> 8f98c3419b3c3a8051de840bc93a5c6cc3295f6b
         self.title('G.M.T. Enregistrement')
         self.geometry('320x160')
         self.resizable(width=False, height=False)
