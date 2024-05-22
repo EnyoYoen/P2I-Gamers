@@ -3,9 +3,7 @@ import http.server
 import json
 import threading
 import time
-import database
-
-db = database.Database()
+from database import db
 
 class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 	def __init__(self, event, *args, **kwargs):
@@ -30,18 +28,34 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 			start = time.time()
 			idPaquet = 1
 			idDonneeMouvement = 2
+			if False:
+				for packet in post_body:
+					date = packet['time']
+
+					if packet['type'] == 'simple':
+						for idCapteur, value in packet['data'].items():
+							db.add_mesure_simple(int(idCapteur)+1, idPaquet, idDonneeMouvement, date, value, save=False)
+
+					elif packet['type'] == 'vector':
+						for idCapteur, vec in packet['data'].items():
+							db.add_mesure_vect(int(idCapteur)+1, idPaquet, idDonneeMouvement, date, *vec, save=False)
+
+				db.save()
+
+			simples, vects = [], []
 			for packet in post_body:
 				date = packet['time']
 
 				if packet['type'] == 'simple':
 					for idCapteur, value in packet['data'].items():
-						db.add_mesure_simple(int(idCapteur)+1, idPaquet, idDonneeMouvement, date, value, save=False)
+						simples.append((int(idCapteur)+1, idPaquet, idDonneeMouvement, date, value))
 
 				elif packet['type'] == 'vector':
 					for idCapteur, vec in packet['data'].items():
-						db.add_mesure_vect(int(idCapteur)+1, idPaquet, idDonneeMouvement, date, *vec, save=False)
+						vects.append((int(idCapteur)+1, idPaquet, idDonneeMouvement, date, *vec))
 
-			db.save()
+			db.add_mesures_multiples(simples, vects)
+
 			print(f'-> Done, took {time.time()-start}sec')
 
 		self.send_response(200)

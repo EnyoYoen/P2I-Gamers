@@ -109,23 +109,23 @@ class Database:
 
 	def add_paquet(self, size):
 		"""Ajoute un paquet de taille size"""
-		sql = "INSERT INTO Paquets (taille) VALUES (%s)"
+		sql = "INSERT INTO Paquets (taille) VALUES (%s);"
 		self.sql(sql, [size])
 		self.save()
 
 	def add_sensor_type(self, type, manufacturer, name):
 		"""Ajoute un type de capteur"""
-		sql = "INSERT INTO TypeCapteurs (type, fabricant, nomCapteur) VALUES (%s, %s, %s)"
+		sql = "INSERT INTO TypeCapteurs (type, fabricant, nomCapteur) VALUES (%s, %s, %s);"
 		self.sql(sql, [type, manufacturer, name])
 		self.save()
 
 	def add_sensor(self, idPlacement, idDispositif, installDate, uninstallDate = None):
 		"""Ajoute un capteur"""
 		if uninstallDate is None:
-			sql = "INSERT INTO Capteurs (idPlacement, idDispositif, dateInsta) VALUES (%s, %s)"
+			sql = "INSERT INTO Capteurs (idPlacement, idDispositif, dateInsta) VALUES (%s, %s);"
 			self.sql(sql, [idPlacement, idDispositif, installDate])
 		else:	
-			sql = "INSERT INTO Capteurs (idPlacement, idDispositif, dateInsta, dateDesinsta) VALUES (%s, %s, %s)"
+			sql = "INSERT INTO Capteurs (idPlacement, idDispositif, dateInsta, dateDesinsta) VALUES (%s, %s, %s);"
 			self.sql(sql, [idPlacement, idDispositif, installDate, uninstallDate])
 		self.save()
 
@@ -137,32 +137,52 @@ class Database:
 
 	def add_mesure_simple(self, idCapteur, idPaquet, idDonneeMouvement, date, value, save=True):
 		"""Ajoute une mesure simple"""
-		sql = "INSERT INTO MesuresSimples (idCapteur, idPaquet, idDonneeMouvement, date, valeur) VALUES (%s, %s, %s, %s, %s)"
+		sql = "INSERT INTO MesuresSimples (idCapteur, idPaquet, idDonneeMouvement, date, valeur) VALUES (%s, %s, %s, %s, %s);"
 		self.sql(sql, [idCapteur, idPaquet, idDonneeMouvement, date, value])
 		if save:
 			self.save()
 
 	def add_mesure_vect(self, idCapteur, idPaquet, idDonneeMouvement, date, x, y, z, save=True):
 		"""Ajoute une mesure vectorielle"""
-		sql = "INSERT INTO MesuresVect (idCapteur, idPaquet, idDonneeMouvement, date, x, y, z) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+		sql = "INSERT INTO MesuresVect (idCapteur, idPaquet, idDonneeMouvement, date, x, y, z) VALUES (%s, %s, %s, %s, %s, %s, %s);"
 		self.sql(sql, [idCapteur, idPaquet, idDonneeMouvement, date, x, y, z])
 		if save:
 			self.save()
 
+	def add_mesures_multiples(self, simples, vects, save=True):
+		"""Ajoute un ensemble de mesures simples et vectorielles"""
+		v = ", ".join(["(%s, %s, %s, %s, %s, %s, %s)"] * len(vects))
+		sql = "INSERT INTO MesuresVect (idCapteur, idPaquet, idDonneeMouvement, date, x, y, z) VALUES " + v
+		data = []
+		for vect in vects:
+			data.extend(vect)
+		self.sql(sql, data)
+
+		v = ", ".join(["(%s, %s, %s, %s, %s)"] * len(simples))
+		sql = "INSERT INTO MesuresSimples (idCapteur, idPaquet, idDonneeMouvement, date, valeur) VALUES " + v
+		data = []
+		for simple in simples:
+			data.extend(simple)
+		self.sql(sql, data)
+
+		if save:
+			self.save()
+
+
 	def add_user(self, name, password, height):
 		"""Ajoute un utilisateur"""
-		sql = "INSERT INTO Utilisateurs (nomUtilisateur, mdp, taille) VALUES (%s, %s, %s)"
-		self.sql(sql, [name, password, height])
+		sql = "INSERT INTO Utilisateurs (nomUtilisateur, mdp, taille) VALUES (%s, %s, %s);"
+		print(self.sql(sql, [name, password, height]))
 		self.save()
 
 	def add_movement_data(self, idUser, idDispositif, date, name):
 		"""Ajoute un mouvement"""
-		sql = "INSERT INTO DonneesMouvements (idUtilisateur, idDispositif, date, nom) VALUES (%s, %s, %s, %s)"
+		sql = "INSERT INTO DonneesMouvements (idUtilisateur, idDispositif, date, nom) VALUES (%s, %s, %s, %s);"
 		self.sql(sql, [idUser, idDispositif, date, name])
 		self.save()
 
 
-if __name__ == "__main__":
-	db = Database()
-	a = db.get_user(3)
-	pass
+	def last_user_id(self):
+		return self.sql("SELECT idUtilisateur FROM Utilisateurs ORDER BY idUtilisateur DESC LIMIT 1")[0][0]
+
+db = Database()

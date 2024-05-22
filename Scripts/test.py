@@ -7,6 +7,16 @@ import math
 URL = "http://localhost:13579/data"
 amplitude = 0.2
 
+def send_mouvement_to_display(data):
+	out = json.dumps({"rotations": data})
+	try:
+		requests.get(f"{URL}?data={out}")
+	except requests.ConnectionError:
+		pass
+	except Exception as e:
+		print(e)
+		pass
+
 while True:
 	data = []
 	reset = []
@@ -40,12 +50,5 @@ while True:
 		)
 
 	for d in [data, reset]:
-		out = json.dumps({"rotations": d})
-		try:
-			requests.get(f"{URL}?data={out}")
-		except requests.ConnectionError:
-			pass
-		except Exception as e:
-			print(e)
-			pass
+		send_mouvement_to_display(d)
 		time.sleep(2)

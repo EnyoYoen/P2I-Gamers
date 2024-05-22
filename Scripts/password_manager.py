@@ -1,7 +1,5 @@
 import hashlib
-from database import Database
-
-db = Database()
+from database import db
 
 def calculate_sha256(data):
     # Convertit data en bites si ce n'est pas déjà le cas
@@ -22,12 +20,13 @@ def register_user(name, password, height):
             return False
     h_mdp = calculate_sha256(password)
     db.add_user(name, h_mdp, height)
-    return True
+    return db.last_user_id()
 
 
 def verify_user(idUser: str, mdp_ut: str) -> bool:
 
-    mdp = db.get_user_by_name(idUser).password
+    user = db.get_user_by_name(idUser)
+    mdp = user.password
     h_mdp_ut = calculate_sha256(mdp_ut)
     
     if h_mdp_ut == mdp:
@@ -35,5 +34,5 @@ def verify_user(idUser: str, mdp_ut: str) -> bool:
     else:
         verif = False
 
-    return verif
+    return None if not verif else user.idUser
 
