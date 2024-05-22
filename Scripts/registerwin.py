@@ -102,11 +102,7 @@ class RegisterWin(tk.Tk):
             if user_id:
                 showinfo(title='Information', message=f'Le compte a été créé \n Bienvenue {user} !')
                 self.queue[0]='connected'
-<<<<<<< HEAD
-                self.user = user
-=======
                 self.user_id = user_id
->>>>>>> 8f98c3419b3c3a8051de840bc93a5c6cc3295f6b
                 self.destroy()
             else:
                 showerror(title='Erreur', message="Le nom d'utilisateur est déjà utilisé")
