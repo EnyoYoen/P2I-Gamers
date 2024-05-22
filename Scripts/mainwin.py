@@ -198,10 +198,10 @@ class MainWin(tk.Tk, DataServer):
 
 	def Sauvegarde(self):
 		namewin = nameWin(self)
-		nom = namewin.nom
-		db.add_movement_data(self.user_id, 1, time.strftime('%Y-%m-%d %H:%M:%S'), nom)
-		for mesure in mvt_exp:
-			db.add_mesure_vect(mesure.idCapteur, mesure.idPaquet, mesure.idDonneeMouvement, mesure.date, mesure.x, mesure.y, mesure.z)
+		# nom = namewin.nom
+		# db.add_movement_data(self.user_id, 1, time.strftime('%Y-%m-%d %H:%M:%S'), nom)
+		# for mesure in mvt_exp:
+		# 	db.add_mesure_vect(mesure.idCapteur, mesure.idPaquet, mesure.idDonneeMouvement, mesure.date, mesure.x, mesure.y, mesure.z)
 		
 
 	def afficher_historique(self, event):
@@ -219,5 +219,5 @@ class MainWin(tk.Tk, DataServer):
 		self.frame_pre_enregistrement.grid(column=0,columnspan= 3,row=2,rowspan = 9,sticky='nesw')
 														 
 if __name__ == "__main__":
-	fen = MainWin()
+	fen = MainWin(0)
 	fen.mainloop()
