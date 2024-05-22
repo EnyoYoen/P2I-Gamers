@@ -147,6 +147,26 @@ class Database:
 		if save:
 			self.save()
 
+	def add_mesures_multiples(self, simples, vects, save=True):
+		"""Ajoute un ensemble de mesures simples et vectorielles"""
+		v = ", ".join(["(%s, %s, %s, %s, %s, %s, %s)"] * len(vects))
+		sql = "INSERT INTO MesuresVect (idCapteur, idPaquet, idDonneeMouvement, date, x, y, z) VALUES " + v
+		data = []
+		for vect in vects:
+			data.extend(vect)
+		self.sql(sql, data)
+
+		v = ", ".join(["(%s, %s, %s, %s, %s)"] * len(simples))
+		sql = "INSERT INTO MesuresSimples (idCapteur, idPaquet, idDonneeMouvement, date, valeur) VALUES " + v
+		data = []
+		for simple in simples:
+			data.extend(simple)
+		self.sql(sql, data)
+
+		if save:
+			self.save()
+
+
 	def add_user(self, name, password, height):
 		"""Ajoute un utilisateur"""
 		sql = "INSERT INTO Utilisateurs (nomUtilisateur, mdp, taille) VALUES (%s, %s, %s)"

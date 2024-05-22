@@ -195,7 +195,7 @@ class MainWin(tk.Tk, DataServer):
 	def Sauvegarde(self) :
 		pass
 		#nameWin(self)
-			
+
 
 	def afficher_historique(self, event) :
 		"""
