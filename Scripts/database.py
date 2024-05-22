@@ -10,7 +10,7 @@ class Database:
 	def __init__(self):
 		self.connexion_bd = None
 		self.connexion()
-
+		
 	def connexion(self):
 		try:
 			self.connexion_bd = mysql.connect(**secret.DATABASE_LOGIN)
@@ -18,6 +18,7 @@ class Database:
 		except Exception as e:
 			print('MySQL [CONNEXION ERROR]')
 			print(e)
+		return self.connexion_bd
 
 	def sql(self, sql, params=None):
 		try:
@@ -37,6 +38,7 @@ class Database:
 	def list_mouvements_info(self):
 		"""Renvoie la liste de tous les mouvements preenregistres"""
 		sql = "SELECT * FROM DonneesMouvements" # TODO !!
+		print( self.sql(sql))
 		return self.sql(sql)
 
 	@MouvementInfo.cast_single
