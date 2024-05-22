@@ -12,8 +12,8 @@ class RegisterWin(tk.Tk):
         self.queue = queue
         self.user_id = None
         self.title('G.M.T. Enregistrement')
-        self.geometry('320x160')
-        self.resizable(width=False, height=False)
+        #self.geometry('320x160')
+        #self.resizable(width=False, height=False)
         self.creer_widgets()
         self.protocol("WM_DELETE_WINDOW", self.quitter)
 
