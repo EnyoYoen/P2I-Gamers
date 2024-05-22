@@ -10,7 +10,7 @@ class Database:
 	def __init__(self):
 		self.connexion_bd = None
 		self.connexion()
-
+		
 	def connexion(self):
 		try:
 			self.connexion_bd = mysql.connect(**secret.DATABASE_LOGIN)
@@ -18,6 +18,7 @@ class Database:
 		except Exception as e:
 			print('MySQL [CONNEXION ERROR]')
 			print(e)
+		return self.connexion_bd
 
 	def sql(self, sql, params=None):
 		try:
@@ -37,6 +38,7 @@ class Database:
 	def list_mouvements_info(self):
 		"""Renvoie la liste de tous les mouvements preenregistres"""
 		sql = "SELECT * FROM DonneesMouvements" # TODO !!
+		print( self.sql(sql))
 		return self.sql(sql)
 
 	@MouvementInfo.cast_single
@@ -146,6 +148,26 @@ class Database:
 		self.sql(sql, [idCapteur, idPaquet, idDonneeMouvement, date, x, y, z])
 		if save:
 			self.save()
+
+	def add_mesures_multiples(self, simples, vects, save=True):
+		"""Ajoute un ensemble de mesures simples et vectorielles"""
+		v = ", ".join(["(%s, %s, %s, %s, %s, %s, %s)"] * len(vects))
+		sql = "INSERT INTO MesuresVect (idCapteur, idPaquet, idDonneeMouvement, date, x, y, z) VALUES " + v
+		data = []
+		for vect in vects:
+			data.extend(vect)
+		self.sql(sql, data)
+
+		v = ", ".join(["(%s, %s, %s, %s, %s)"] * len(simples))
+		sql = "INSERT INTO MesuresSimples (idCapteur, idPaquet, idDonneeMouvement, date, valeur) VALUES " + v
+		data = []
+		for simple in simples:
+			data.extend(simple)
+		self.sql(sql, data)
+
+		if save:
+			self.save()
+
 
 	def add_user(self, name, password, height):
 		"""Ajoute un utilisateur"""
