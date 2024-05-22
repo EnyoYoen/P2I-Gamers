@@ -3,9 +3,7 @@ import http.server
 import json
 import threading
 import time
-import database
-
-db = database.Database()
+from database import db
 
 class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 	def __init__(self, event, *args, **kwargs):
