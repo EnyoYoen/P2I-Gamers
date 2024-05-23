@@ -21,20 +21,23 @@ class MainWin(tk.Tk, DataServer):
 		self.user_id = user_id
 
 		self.title('G.M.T.')
-        # Obtenez la résolution de l'écran
+        # récuperation de la résolution de l'écran
 		screen_width = self.winfo_screenwidth()
 		screen_height = self.winfo_screenheight()
 
-        # Configurez la fenêtre pour qu'elle utilise la résolution obtenue
 		self.geometry(f"{screen_width}x{screen_height}")
-		#self.geometry('500x800')
 		self.creer_widgets()
 
 	def creer_widgets(self):
 		"""
 		Création des widgets
 		"""
-		#Label toute en haut
+        # Configuration des colonnes/lignes pour qu'elles se redimensionnent
+		for i in range(0,8) :
+		    self.columnconfigure(i, weight=1)
+		    self.rowconfigure(i, weight=1)
+            
+		#Label tout en haut
 		self.label = tk.Label(self, text="Hello World")
 		self.label.grid(column=3,row=0)
 
@@ -110,7 +113,7 @@ class MainWin(tk.Tk, DataServer):
 		#Exit button
 		self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy)
 		self.exit_bouton.bind('<Button-1>',self.quitter)
-		self.exit_bouton.grid()
+		self.exit_bouton.grid(row=14, column=3)
 	
 	def quitter(self, event):
 		"""
