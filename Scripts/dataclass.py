@@ -32,7 +32,7 @@ class DataClass:
 		return wrapper
 
 	def __repr__(self):
-		return '{' + ', '.join(map(lambda k: f'{k}: {getattr(self, k)}', self.KEYS)) + '}'
+		return '{' + ', '.join(map(lambda k: f'{k}: {getattr(self, k, None)}', self.KEYS)) + '}'
 
 class MouvementInfo(DataClass):
 	KEYS = [
@@ -49,7 +49,6 @@ class MesureSimple(DataClass):
 		'idMesure',
 		'dateCreation',
 		'valeur',
-		'idPaquet',
 		'idMvt'
 	]
 
@@ -61,7 +60,6 @@ class MesureVect(DataClass):
 		'X',
 		'Y',
 		'Z',
-		'idPaquet',
 		'idMvt'
 	]
 
