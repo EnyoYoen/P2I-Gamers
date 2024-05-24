@@ -38,7 +38,7 @@ class Database:
 	def list_mouvements_info(self):
 		"""Renvoie la liste de tous les mouvements preenregistres"""
 		sql = "SELECT * FROM DonneesMouvements" # TODO !!
-		print( self.sql(sql))
+		print(self.sql(sql))
 		return self.sql(sql)
 
 	@MouvementInfo.cast_single
@@ -168,7 +168,6 @@ class Database:
 		if save:
 			self.save()
 
-
 	def add_user(self, name, password, height):
 		"""Ajoute un utilisateur"""
 		sql = "INSERT INTO Utilisateurs (nomUtilisateur, mdp, taille) VALUES (%s, %s, %s);"
@@ -176,11 +175,24 @@ class Database:
 		self.save()
 
 	def add_movement_data(self, idUser, idDispositif, date, name):
-		"""Ajoute un mouvement"""
-		sql = "INSERT INTO DonneesMouvements (idUtilisateur, idDispositif, date, nom) VALUES (%s, %s, %s, %s);"
-		self.sql(sql, [idUser, idDispositif, date, name])
+		"""Ajoute un mouvement et renvoie l'idMvmt correspondant."""
+		sql = f'SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_SCHEMA = "{secret.DATABASE_LOGIN["database"]}" AND TABLE_NAME = "DonneesMouvements";'
+		# La valeur vient de secret, si quelqu'un l'a modifié alors il a acces aux mdp donc c'est safe.
+
+		value = self.sql(sql)
+		if not value or not value[0][0]:
+			# Shouldn't happen?
+			idMvmt = 0
+		else:
+			idMvmt = value[0][0]
+
+		sql = "INSERT INTO DonneesMouvements (idDonneeMouvement, idUtilisateur, idDispositif, date, nom) VALUES (%s, %s, %s, %s, %s);"
+		self.sql(sql, [idMvmt, idUser, idDispositif, date, name])
+		# TODO - Gérer les collisions, si deux utilisateurs tentent d'enregistrer un mouvement en meme temps on pourrait alors avoir un problème sur la contrainte unique id
+
 		self.save()
 
+		return idMvmt
 
 	def last_user_id(self):
 		return self.sql("SELECT idUtilisateur FROM Utilisateurs ORDER BY idUtilisateur DESC LIMIT 1")[0][0]
