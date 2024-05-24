@@ -38,7 +38,7 @@ class MainWin(tk.Tk, DataServer):
 			self.rowconfigure(i, weight=1)
 
 		#Label tout en haut
-		self.label = tk.Label(self, text="Hello World")
+		self.label = tk.Label(self, text="Entrainement G.M.T")
 		self.label.grid(column=3,row=0)
 
 		#Frame historique
@@ -66,17 +66,23 @@ class MainWin(tk.Tk, DataServer):
 		self.scrollbar_pre_enregistrement = tk.Scrollbar(self.frame_pre_enregistrement)
 		self.scrollbar_pre_enregistrement.grid(column=1,row=0, sticky='nesw')
 
+
 		#Liste pré enregistrement
 		self.list_pre_enregistrement = tk.Listbox(self.frame_pre_enregistrement, yscrollcommand=self.scrollbar_pre_enregistrement.set)
 		self.list_pre_enregistrement.grid(column=0,row=0, sticky='nesw')
+        
 
 		for i in range(50):
-			self.list_pre_enregistrement.insert(tk.END, str(i) + ' - pre enregistrement') #A modifier
+			self.list_historique.insert(tk.END, str(i) + ' - historique') #A modifier
+
+		self.data_list_pre_enregistrement = db.list_mouvements_info()
+		for i in range(len(self.data_list_pre_enregistrement)):
+			self.list_pre_enregistrement.insert(tk.END, str(i+1) + ' - ' + str(self.data_list_pre_enregistrement[i].name) )
 
 		self.scrollbar_pre_enregistrement.config(command = self.list_pre_enregistrement.yview )
 
 		#Afficher la frame pré-enregistrement
-		self.frame_pre_enregistrement.grid(column=0, columnspan= 3,row=2,rowspan = 9,sticky='nesw')
+		self.frame_pre_enregistrement.grid(column=0, columnspan= 1,row=2,rowspan = 9,sticky='nesw')
 		self.frame_pre_enregistrement.columnconfigure(0, weight = 1)
 		self.frame_pre_enregistrement.rowconfigure(0, weight=1)
 
@@ -87,13 +93,13 @@ class MainWin(tk.Tk, DataServer):
 		
 
 		#Bouton pré-enregistrement
-		self.button_preenregistrement = tk.Button(self, text="Pré-enregistre")
-		self.button_preenregistrement.bind('<Button-1>', self.afficher_preenregistrement)
-		self.button_preenregistrement.grid(column=0,row=1, sticky='nesw')
+		self.label_preenregistrement= tk.Label(self, text='Pré-enregistrement')
+		self.label_preenregistrement.grid(column=0, row=1, sticky='nesw')
+
 		
 		#cadre visualisation
 		self.canevas = tk.Canvas(self, background='lightblue') #width=400, height=500
-		self.canevas.grid(column=3,columnspan=6,row=1,rowspan= 10, sticky='nesw')
+		self.canevas.grid(column=2,columnspan=6,row=1,rowspan= 10, sticky='nesw')
 		
 		#gestion enregistrement
 		self.duree = 0

@@ -42,29 +42,29 @@ class RegisterWin(tk.Tk):
 
         #confirm password
         self.password_conf_label = tk.Label(self, text="Confirmation mot de passe:")
-        self.password_conf_label.grid(column=0,
-                                      row=3,
-                                      sticky=tk.W,
-                                      padx=5,
-                                      pady=5)
+        self.password_conf_label.grid(column=0, row=3, sticky=tk.W, padx=5, pady=5)
 
         self.password_conf_entry = tk.Entry(self, show="*")
 
-        self.password_conf_entry.grid(column=1,
-                                      row=3,
-                                      sticky=tk.E,
-                                      padx=5,
-                                      pady=5)
+        self.password_conf_entry.grid(column=1, row=3, sticky=tk.E, padx=5, pady=5)
+
+        #Is it a teacher
+        self.is_a_teacher_label = tk.Label(self, text="Mode enseignant :")
+        self.is_a_teacher_label.grid(column=0, row=4, sticky=tk.E, padx=5, pady=5)
+
+        self.is_teacher = tk.IntVar()
+        self.is_a_teacher_checkbutton = tk.Checkbutton(self, variable=self.is_teacher, onvalue=True, offvalue=False)
+        self.is_a_teacher_checkbutton.grid(column=1, row=4, sticky=tk.W, padx=5, pady=5)    
 
         # login button
         self.login_button = tk.Button(self, text="Retour connexion")
         self.login_button.bind('<Button-1>', self.login)
-        self.login_button.grid(column=0, row=4, sticky=tk.E, padx=5, pady=5)
+        self.login_button.grid(column=0, row=5, sticky=tk.E, padx=5, pady=5)
 
         # register button
         self.register_button = tk.Button(self, text="Enregistrement")
-        self.register_button.bind('<Button-1>', self.register_user)
-        self.register_button.grid(column=1, row=4, sticky=tk.W, padx=5, pady=5)
+        self.register_button.bind('<Button-1>', self.register_the_user)
+        self.register_button.grid(column=1, row=5, sticky=tk.W, padx=5, pady=5)
 
 
     def get_height(self) -> int:
@@ -77,12 +77,13 @@ class RegisterWin(tk.Tk):
             else:
                 return
         
-    def register_user(self, event):
+    def register_the_user(self, event):
 
         user = self.username_entry.get()
         height = self.get_height()
         password = self.password_entry.get()
         password_conf = self.password_conf_entry.get()
+        is_student = not bool(self.is_teacher.get())
 
         if not user:
             showwarning(title='Attention', message="Il faut un nom d'utilisateur")
@@ -98,7 +99,7 @@ class RegisterWin(tk.Tk):
             showerror(title='Erreur', message='Les mots de passes ne correspondent pas')
         else:
 
-            user_id = register_user(user, password, height)
+            user_id = register_user(user, password, height, is_student)
             if user_id:
                 showinfo(title='Information', message=f'Le compte a été créé \n Bienvenue {user} !')
                 self.queue[0]='connected'

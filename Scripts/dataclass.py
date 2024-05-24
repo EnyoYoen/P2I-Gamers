@@ -40,7 +40,7 @@ class MouvementInfo(DataClass):
 		'idUtilisateur', # qui a créé le mouvement
 		'idDispositif',
 		'dateCreation',
-		'nom',
+		'name'
 	]
 
 class MesureSimple(DataClass):
