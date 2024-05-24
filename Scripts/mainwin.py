@@ -41,6 +41,7 @@ class MainWin(tk.Tk, DataServer):
 			self.rowconfigure(i, weight=1)
 
 		#Label tout en haut
+		self.rowconfigure(0, weight=0)
 		self.label = tk.Label(self, text="Entrainement G.M.T")
 		self.label.grid(column=4,row=0)
 
@@ -69,7 +70,7 @@ class MainWin(tk.Tk, DataServer):
 
 		#Liste pré enregistrement
 		self.list_pre_enregistrement = tk.Listbox(self.frame_pre_enregistrement, yscrollcommand=self.scrollbar_pre_enregistrement.set)
-		self.list_pre_enregistrement.grid(column=0,row=0, sticky='nesw')
+		self.list_pre_enregistrement.grid(column=0, row=0, sticky='nesw')
         
 		self.data_list_historique = db.list_mouvements_info(self.user_id)
 		for i in range(len(self.data_list_historique)):
@@ -82,19 +83,19 @@ class MainWin(tk.Tk, DataServer):
 		self.scrollbar_pre_enregistrement.config(command = self.list_pre_enregistrement.yview )
 
 		#Afficher la frame pré-enregistrement
-		self.frame_pre_enregistrement.grid(column=0, columnspan= 2,row=1,rowspan = 9,sticky='nesw')
+		self.frame_pre_enregistrement.grid(column=0, columnspan= 2, row=1, rowspan = 9, ipadx=10,  sticky='nesw')
 		self.frame_pre_enregistrement.columnconfigure(0, weight = 1)
 		self.frame_pre_enregistrement.rowconfigure(0, weight=1)
 
 		#Bouton pré-enregistrement
 		self.button_preenregistrement = tk.Button(self, text="Pré-enregistrement")
 		self.button_preenregistrement.bind('<Button-1>', self.afficher_preenregistrement)
-		self.button_preenregistrement.grid(column=0,row=0, sticky='nesw')
+		self.button_preenregistrement.grid(column=0, row=0, sticky='nesw')
         
         #Bouton historique
 		self.button_historique = tk.Button(self, text="ᅠHistoriqueᅠ")
 		self.button_historique.bind('<Button-1>', self.afficher_historique)
-		self.button_historique.grid(column=1,row=0, sticky="nesw")
+		self.button_historique.grid(column=1, row=0, sticky="nesw")
 		
 		#cadre visualisation
 		self.canevas = tk.Canvas(self, background='lightblue') #width=400, height=500
