@@ -35,8 +35,8 @@ class Database:
 		self.connexion_bd.commit()
 
 	@MouvementInfo.cast
-	def list_mouvements_info(self):
-		"""Renvoie la liste de tous les mouvements preenregistres"""
+	def list_mouvements_info(self, id_user: int) -> list:
+		"""Renvoie la liste de tous les mouvements de l'user mis en paramètre"""
 		sql = "SELECT * FROM DonneesMouvements" # TODO !!
 		print( self.sql(sql))
 		return self.sql(sql)

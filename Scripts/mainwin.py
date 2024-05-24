@@ -68,11 +68,11 @@ class MainWin(tk.Tk, DataServer):
 		self.list_pre_enregistrement = tk.Listbox(self.frame_pre_enregistrement, yscrollcommand=self.scrollbar_pre_enregistrement.set)
 		self.list_pre_enregistrement.grid(column=0,row=0, sticky='nesw')
         
+		self.data_list_historique = db.list_mouvements_info(self.user_id)
+		for i in range(len(self.data_list_historique)):
+			self.list_historique.insert(tk.END, str(i+1) + ' - ' + str(self.data_list_historique[i].name) ) 
 
-		for i in range(50):
-			self.list_historique.insert(tk.END, str(i) + ' - historique') #A modifier
-
-		self.data_list_pre_enregistrement = db.list_mouvements_info()
+		self.data_list_pre_enregistrement = db.list_mouvements_info(1) #id 1 pour les pre-enregistrement
 		for i in range(len(self.data_list_pre_enregistrement)):
 			self.list_pre_enregistrement.insert(tk.END, str(i+1) + ' - ' + str(self.data_list_pre_enregistrement[i].name) )
 
