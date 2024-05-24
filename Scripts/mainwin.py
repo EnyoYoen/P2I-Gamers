@@ -8,6 +8,7 @@ import tkinter as tk
 from tkinter import messagebox
 from dataclass import *
 from database import db
+import perceptron
 import comparaison as cp
 from server import DataServer
 import namewin
@@ -139,6 +140,9 @@ class MainWin(tk.Tk, DataServer):
 		Démarrage de l'enregistrement, création boutons pause et arret
 		"""
 		self.running = True
+
+		idMvt = self.add_movement_data(self.user_id, 1, )
+		self.server_event.idMvt = idMvt
 		self.server_event.set()
 		while True: # Clear the queue
 			try:
@@ -211,8 +215,8 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_start.bind('<Button-1>', self.start)
 		self.bouton_start.grid(row=11, column=3)
 
-		text = cp.comparaison(data_th, mvt_exp) 
-		self.resultat = messagebox.showinfo(title='Info', message=text)
+		# text = cp.comparaison(data_th, mvt_exp) 
+		# self.resultat = messagebox.showinfo(title='Info', message=text)
 
 		self.choix_sauvegarde = messagebox.askquestion(message='Voulez vous sauvegarder votre enregistrement ?', type='yesno')
 

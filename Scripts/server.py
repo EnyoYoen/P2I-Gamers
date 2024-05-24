@@ -30,7 +30,7 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 			print(f'Saving 1 packet, size: {len(post_body)}')
 			start = time.time()
 			idPaquet = 1
-			idDonneeMouvement = 2
+			idDonneeMouvement = self.event.idMvt
 			if False:
 				for packet in post_body:
 					date = packet['time']
@@ -52,12 +52,12 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 				if packet['type'] == 'simple':
 					for idCapteur, value in packet['data'].items():
 						simples.append((int(idCapteur)+1, idPaquet, idDonneeMouvement, date, value))
-						mesure = MesureSimple.from_raw((int(idCapteur)+1, None, date, value, idPaquet, idDonneeMouvement))
+						mesure = MesureSimple.from_raw((int(idCapteur)+1, date, value, idPaquet, idDonneeMouvement))
 
 				elif packet['type'] == 'vector':
 					for idCapteur, vec in packet['data'].items():
 						vects.append((int(idCapteur)+1, idPaquet, idDonneeMouvement, date, *vec))
-						mesure = MesureVect.from_raw((int(idCapteur)+1, None, date, *vec, idPaquet, idDonneeMouvement))
+						mesure = MesureVect.from_raw((int(idCapteur)+1, date, *vec, idPaquet, idDonneeMouvement))
 
 				self.que.put(mesure)
 
