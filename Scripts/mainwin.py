@@ -111,6 +111,8 @@ class MainWin(tk.Tk, DataServer):
 
 		self.label_enregistrement = tk.Label(text="Commencer l'enregistrement")
 		self.label_enregistrement.grid(row=12, column=3)
+		self.label_pourcentage = tk.Label(text='Votre mouvement a 20% de précision')
+		self.label_pourcentage.grid(row=12, column=5)
         
         #image bouton start
 		self.img_start = tk.PhotoImage(file='Scripts/images/start.png')
