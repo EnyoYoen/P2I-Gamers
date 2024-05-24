@@ -169,10 +169,10 @@ class Database:
 			self.save()
 
 
-	def add_user(self, name, password, height):
+	def add_user(self, name, password, height, is_teacher):
 		"""Ajoute un utilisateur"""
 		sql = "INSERT INTO Utilisateurs (nomUtilisateur, mdp, taille) VALUES (%s, %s, %s);"
-		print(self.sql(sql, [name, password, height]))
+		print(self.sql(sql, [name, password, height, is_teacher]))
 		self.save()
 
 	def add_movement_data(self, idUser, idDispositif, date, name):
