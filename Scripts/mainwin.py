@@ -140,7 +140,7 @@ class MainWin(tk.Tk, DataServer):
 		"""
 		self.running = True
 
-		idMvt = self.add_movement_data(self.user_id, 1, )
+		idMvt = db.add_movement_data(self.user_id, 1, '1970-01-01 01:01:01', None)
 		self.server_event.idMvt = idMvt
 		self.server_event.set()
 
@@ -258,7 +258,7 @@ class MainWin(tk.Tk, DataServer):
 			except queue.Empty:
 				break
 
-		data_th = perceptron.get_mvt_name(data)
+		data_th = perceptron.predict(data)
 
 		value = cp.comparaison(data_th, data)
 
@@ -267,8 +267,6 @@ class MainWin(tk.Tk, DataServer):
   
 		self.after(1000, self.get_current_comp)
 
-
-														 
 if __name__ == "__main__":
-	fen = MainWin(0)
+	fen = MainWin(1)
 	fen.mainloop()
