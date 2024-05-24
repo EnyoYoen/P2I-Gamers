@@ -54,9 +54,6 @@ class MainWin(tk.Tk, DataServer):
 		self.list_historique = tk.Listbox(self.frame_historique, yscrollcommand=self.scrollbar.set)
 		self.list_historique.grid(column=0,row=0, sticky='nesw')
 
-		for i in range(50):
-			self.list_historique.insert(tk.END, str(i) + ' - historique') #A modifier
-
 		self.scrollbar.config(command = self.list_historique.yview )
 
 		#Frame pré-enregistrement
