@@ -47,7 +47,7 @@ def register(date:datetime, nomMouvement, idUser, idDispositif):
 
     db.save()
 
-register(datetime(2024, 5, 21, 10, 43, 32), "test", 10, 1)
+# register(datetime(2024, 5, 21, 10, 43, 32), "test", 10, 1)
 
 
 
