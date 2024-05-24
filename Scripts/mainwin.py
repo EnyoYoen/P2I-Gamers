@@ -11,6 +11,7 @@ import perceptron
 import comparaison as cp
 from server import DataServer
 import namewin
+from tkinter import font
 
 mvt_exp = MesureVect.from_raw_list([(0,0,1,2,3,1),(1,1,4,5,6,2),(2,2,7,8,9,3)])
 data_th = {"aurevoir":MesureVect.from_raw_list([(0,3,10,9,8,1),(0,4,7,6,5,1.5),(0,5,4,3,2,2),(0,6,1,1,1,2.6),(0,7,1,2,3,3)]),
@@ -40,7 +41,8 @@ class MainWin(tk.Tk, DataServer):
 			self.rowconfigure(i, weight=1)
 
 		#Label tout en haut
-		self.label = tk.Label(self, text="Entrainement G.M.T")
+		self.title_font = font.Font(family="Tahoma", size=16, weight="bold", underline=True)
+		self.label = tk.Label(self, text="Entrainement G.M.T", font=self.title_font)
 		self.label.grid(column=4,row=0)
 
 		#Frame historique
@@ -85,13 +87,16 @@ class MainWin(tk.Tk, DataServer):
 		self.frame_pre_enregistrement.columnconfigure(0, weight = 1)
 		self.frame_pre_enregistrement.rowconfigure(0, weight=1)
 
+		#police d'écriture
+		self.font = font.Font(family="Helvetica", size=8, weight="bold")
+
 		#Bouton pré-enregistrement
-		self.button_preenregistrement = tk.Button(self, text="Pré-enregistrement")
+		self.button_preenregistrement = tk.Button(self, text="Pré-enregistrement", font=self.font)
 		self.button_preenregistrement.bind('<Button-1>', self.afficher_preenregistrement)
 		self.button_preenregistrement.grid(column=0,row=0, sticky='nesw')
         
         #Bouton historique
-		self.button_historique = tk.Button(self, text="Historique")
+		self.button_historique = tk.Button(self, text="Historique", font=self.font)
 		self.button_historique.bind('<Button-1>', self.afficher_historique)
 		self.button_historique.grid(column=1,row=0, sticky="nesw")
 		
