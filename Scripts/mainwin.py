@@ -23,7 +23,7 @@ class MainWin(tk.Tk, DataServer):
 		self.title('G.M.T.')
         # récuperation de la résolution de l'écran
 		screen_width = self.winfo_screenwidth()
-		screen_height = self.winfo_screenheight()
+		screen_height = self.winfo_screenheight() - 100
 
 		self.geometry(f"{screen_width}x{screen_height}")
 		self.creer_widgets()
@@ -39,7 +39,7 @@ class MainWin(tk.Tk, DataServer):
             
 		#Label tout en haut
 		self.label = tk.Label(self, text="Entrainement G.M.T")
-		self.label.grid(column=3,row=0)
+		self.label.grid(column=4,row=0)
 
 		#Frame historique
 		self.frame_historique = tk.Frame(self)
@@ -79,27 +79,28 @@ class MainWin(tk.Tk, DataServer):
 		self.scrollbar_pre_enregistrement.config(command = self.list_pre_enregistrement.yview )
 
 		#Afficher la frame pré-enregistrement
-		self.frame_pre_enregistrement.grid(column=0, columnspan= 1,row=2,rowspan = 9,sticky='nesw')
+		self.frame_pre_enregistrement.grid(column=0, columnspan= 2,row=1,rowspan = 9,sticky='nesw')
 		self.frame_pre_enregistrement.columnconfigure(0, weight = 1)
 		self.frame_pre_enregistrement.rowconfigure(0, weight=1)
-        
-		self.frame_historique.grid(column=1,columnspan=1,row=2,rowspan = 9,sticky='nesw')
-		self.frame_historique.columnconfigure(0, weight = 1)
-		self.frame_historique.rowconfigure(0, weight=1)
-
 		
-		#label historique
-		self.label_historique = tk.Label(self, text='Historique')
-		self.label_historique.grid(column=1, row=1, sticky='nesw')
 
 		#Bouton pré-enregistrement
-		self.label_preenregistrement= tk.Label(self, text='Pré-enregistrement')
-		self.label_preenregistrement.grid(column=0, row=1, sticky='nesw')
-
+		self.button_preenregistrement = tk.Button(self, text="Pré-enregistre")
+		self.button_preenregistrement.bind('<Button-1>', self.afficher_preenregistrement)
+		self.button_preenregistrement.grid(column=0,row=0, sticky='nesw')
+        
+        #Bouton historique
+		self.button_historique = tk.Button(self, text="ᅠHistoriqueᅠ")
+		self.button_historique.bind('<Button-1>', self.afficher_historique)
+		self.button_historique.grid(column=1,row=0, sticky="nesw")
 		
 		#cadre visualisation
 		self.canevas = tk.Canvas(self, background='lightblue') #width=400, height=500
 		self.canevas.grid(column=2,columnspan=6,row=1,rowspan= 10, sticky='nesw')
+        
+        #ajustement de la taille relative
+		#self.canevas.columnconfigure(1, weight=2)
+		#self.frame_pre_enregistrement.columnconfigure(1, weight=1)
 		
 		#gestion enregistrement
 		self.duree = 0
@@ -209,7 +210,19 @@ class MainWin(tk.Tk, DataServer):
 		if self.choix_sauvegarde == 'yes' :
 			self.Sauvegarde()
 			
-			
+	def afficher_historique(self, event):
+		"""
+		Affichage de l'historique (remplacer la liste )
+		"""
+		self.frame_pre_enregistrement.grid_forget()
+		self.frame_historique.grid(column=0,columnspan= 2,row=1,rowspan = 9,sticky='nesw')
+
+	def afficher_preenregistrement(self, event):
+		"""
+		Affichage du pré-enregistrement (remplacer la liste )
+		"""
+		self.frame_historique.grid_forget()
+		self.frame_pre_enregistrement.grid(column=0,columnspan= 2,row=1,rowspan = 9,sticky='nesw')		
 
 	def Sauvegarde(self):
 		namewin = nameWin(self)
