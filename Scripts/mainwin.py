@@ -54,9 +54,6 @@ class MainWin(tk.Tk, DataServer):
 		self.list_historique = tk.Listbox(self.frame_historique, yscrollcommand=self.scrollbar.set)
 		self.list_historique.grid(column=0,row=0, sticky='nesw')
 		
-		for i in range(50):
-			self.list_historique.insert(tk.END, str(i) + ' - historique') #A modifier
-		
 		self.scrollbar.config(command = self.list_historique.yview )
 
 		#Frame pré-enregistrement
@@ -71,7 +68,11 @@ class MainWin(tk.Tk, DataServer):
 		self.list_pre_enregistrement.grid(column=0,row=0, sticky='nesw')
 
 		for i in range(50):
-			self.list_pre_enregistrement.insert(tk.END, str(i) + ' - pre enregistrement') #A modifier
+			self.list_historique.insert(tk.END, str(i) + ' - historique') #A modifier
+
+		self.data_list_pre_enregistrement = db.list_mouvements_info()
+		for i in range(len(self.data_list_pre_enregistrement)):
+			self.list_pre_enregistrement.insert(tk.END, str(i+1) + ' - ' + str(self.data_list_pre_enregistrement[i].name) )
 
 		self.scrollbar_pre_enregistrement.config(command = self.list_pre_enregistrement.yview )
 
