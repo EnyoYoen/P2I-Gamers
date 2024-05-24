@@ -86,12 +86,6 @@ class MainWin(tk.Tk, DataServer):
 		self.frame_pre_enregistrement.columnconfigure(0, weight = 1)
 		self.frame_pre_enregistrement.rowconfigure(0, weight=1)
 
-		#Bouton historique
-		self.button_historique = tk.Button(self, text="ᅠHistoriqueᅠ")
-		self.button_historique.bind('<Button-1>', self.afficher_historique)
-		self.button_historique.grid(column=1,row=1, sticky="nesw")
-		
-
 		#Bouton pré-enregistrement
 		self.button_preenregistrement = tk.Button(self, text="Pré-enregistre")
 		self.button_preenregistrement.bind('<Button-1>', self.afficher_preenregistrement)
@@ -248,19 +242,6 @@ class MainWin(tk.Tk, DataServer):
 			db.add_mesure_vect(mesure.idCapteur, mesure.idPaquet, mesure.idMvmt, mesure.date, mesure.x, mesure.y, mesure.z)
 
 
-	def afficher_historique(self, event):
-		"""
-		Affichage de l'historique (remplacer la liste )
-		"""
-		self.frame_pre_enregistrement.grid_forget()
-		self.frame_historique.grid(column=0,columnspan= 3,row=2,rowspan = 9,sticky='nesw')
-
-	def afficher_preenregistrement(self, event):
-		"""
-		Affichage du pré-enregistrement (remplacer la liste )
-		"""
-		self.frame_historique.grid_forget()
-		self.frame_pre_enregistrement.grid(column=0,columnspan= 3,row=2,rowspan = 9,sticky='nesw')
 														 
 if __name__ == "__main__":
 	fen = MainWin(0)
