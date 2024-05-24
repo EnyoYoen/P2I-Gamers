@@ -83,7 +83,7 @@ class RegisterWin(tk.Tk):
         height = self.get_height()
         password = self.password_entry.get()
         password_conf = self.password_conf_entry.get()
-        is_teacher = bool(self.is_teacher.get())
+        is_student = not bool(self.is_teacher.get())
 
         if not user:
             showwarning(title='Attention', message="Il faut un nom d'utilisateur")
@@ -99,7 +99,7 @@ class RegisterWin(tk.Tk):
             showerror(title='Erreur', message='Les mots de passes ne correspondent pas')
         else:
 
-            user_id = register_user(user, password, height, is_teacher)
+            user_id = register_user(user, password, height, is_student)
             if user_id:
                 showinfo(title='Information', message=f'Le compte a été créé \n Bienvenue {user} !')
                 self.queue[0]='connected'
