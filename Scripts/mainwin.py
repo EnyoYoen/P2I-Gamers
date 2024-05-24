@@ -34,8 +34,8 @@ class MainWin(tk.Tk, DataServer):
 		"""
         # Configuration des colonnes/lignes pour qu'elles se redimensionnent
 		for i in range(0,8) :
-		    self.columnconfigure(i, weight=1)
-		    self.rowconfigure(i, weight=1)
+			self.columnconfigure(i, weight=1)
+			self.rowconfigure(i, weight=1)
             
 		#Label tout en haut
 		self.label = tk.Label(self, text="Entrainement G.M.T")
