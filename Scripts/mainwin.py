@@ -87,7 +87,7 @@ class MainWin(tk.Tk, DataServer):
 		self.frame_pre_enregistrement.rowconfigure(0, weight=1)
 
 		#Bouton pré-enregistrement
-		self.button_preenregistrement = tk.Button(self, text="Pré-enregistre")
+		self.button_preenregistrement = tk.Button(self, text="Pré-enregistrement")
 		self.button_preenregistrement.bind('<Button-1>', self.afficher_preenregistrement)
 		self.button_preenregistrement.grid(column=0,row=0, sticky='nesw')
         
@@ -114,7 +114,7 @@ class MainWin(tk.Tk, DataServer):
 		self.label_enregistrement.grid(row=12, column=3)
         
         #image bouton start
-		self.img_start = tk.PhotoImage(file='images/start.png')
+		self.img_start = tk.PhotoImage(file='Scripts/images/start.png')
 		
 		self.bouton_start = tk.Button(self, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
