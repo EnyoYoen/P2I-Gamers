@@ -33,5 +33,3 @@ def save_MLP(mlp, filename = 'MLP.pkl'):
 def load_MLP(filename = 'MLP.pkl'):
     with open(filename, 'rb') as fid:
         return pickle.load(fid)
-
-
