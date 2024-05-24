@@ -1,5 +1,5 @@
 import numpy as np
-import cPickle
+import pickle
 
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import confusion_matrix
@@ -7,14 +7,10 @@ from sklearn.metrics import ConfusionMatrixDisplay
 
 
 def train_MLP(train_data, test_data):
-    data_size = len(train_data.index)
-    test_size = len(test_data.index)
-
-    # TODO: Finish
-    train = train_data.loc[:]
-    train_labels = train_data[:]
-    test = test_data.loc[:]
-    test_labels = test_data[:]
+    train = train_data.iloc[:, :-1]
+    train_labels = train_data.iloc[:, -1]
+    test = test_data.iloc[:, :-1]
+    test_labels = test_data.iloc[:, -1]
 
     mlp = MLPClassifier(hidden_layer_sizes = (10, 20), random_state=1, max_iter=300).fit(train, train_labels)
     pred = mlp.predict(test.loc[:,:])
@@ -32,10 +28,10 @@ def train_MLP(train_data, test_data):
 
 def save_MLP(mlp, filename = 'MLP.pkl'):
     with open(filename, 'wb') as fid:
-        cPickle.dump(mlp, fid)    
+        pickle.dump(mlp, fid)    
 
 def load_MLP(filename = 'MLP.pkl'):
     with open(filename, 'rb') as fid:
-        return cPickle.load(fid)
+        return pickle.load(fid)
 
 
