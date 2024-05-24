@@ -37,9 +37,8 @@ class Database:
 	@MouvementInfo.cast
 	def list_mouvements_info(self, id_user: int) -> list:
 		"""Renvoie la liste de tous les mouvements de l'user mis en paramètre"""
-		sql = "SELECT * FROM DonneesMouvements" # TODO !!
-		print(self.sql(sql))
-		return self.sql(sql)
+		sql = "SELECT * FROM DonneesMouvements WHERE idUtilisateur=%s" 
+		return self.sql(sql, [id_user])
 
 	@MouvementInfo.cast_single
 	def get_mouvements_info(self, idMouvement):
