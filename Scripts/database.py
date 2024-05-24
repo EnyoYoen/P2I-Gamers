@@ -150,15 +150,15 @@ class Database:
 
 	def add_mesures_multiples(self, simples, vects, save=True):
 		"""Ajoute un ensemble de mesures simples et vectorielles"""
-		v = ", ".join(["(%s, %s, %s, %s, %s, %s, %s)"] * len(vects))
-		sql = "INSERT INTO MesuresVect (idCapteur, idPaquet, idDonneeMouvement, date, x, y, z) VALUES " + v
+		v = ", ".join(["(%s, %s, %s, %s, %s, %s)"] * len(vects))
+		sql = "INSERT INTO MesuresVect (idCapteur, idDonneeMouvement, date, x, y, z) VALUES " + v
 		data = []
 		for vect in vects:
 			data.extend(vect)
 		self.sql(sql, data)
 
-		v = ", ".join(["(%s, %s, %s, %s, %s)"] * len(simples))
-		sql = "INSERT INTO MesuresSimples (idCapteur, idPaquet, idDonneeMouvement, date, valeur) VALUES " + v
+		v = ", ".join(["(%s, %s, %s, %s)"] * len(simples))
+		sql = "INSERT INTO MesuresSimples (idCapteur, idDonneeMouvement, date, valeur) VALUES " + v
 		data = []
 		for simple in simples:
 			data.extend(simple)
@@ -170,7 +170,7 @@ class Database:
 
 	def add_user(self, name, password, height, is_student):
 		"""Ajoute un utilisateur"""
-		sql = "INSERT INTO Utilisateurs (nomUtilisateur, mdp, taille) VALUES (%s, %s, %s);"
+		sql = "INSERT INTO Utilisateurs (nomUtilisateur, mdp, taille, eleve) VALUES (%s, %s, %s, %s);"
 		print(self.sql(sql, [name, password, height, is_student]))
 		self.save()
 
@@ -193,6 +193,12 @@ class Database:
 		self.save()
 
 		return idMvmt
+
+	def rename_donnees(self, idMvt, name, save=True):
+		sql = "UPDATE DonneesMouvements SET user=1, nom=%s WHERE idDonneeMouvement=%s"
+		self.sql(sql, [name, idMvt])
+		if save:
+			self.save()
 
 	def last_user_id(self):
 		return self.sql("SELECT idUtilisateur FROM Utilisateurs ORDER BY idUtilisateur DESC LIMIT 1")[0][0]
