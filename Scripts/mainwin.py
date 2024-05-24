@@ -43,6 +43,7 @@ class MainWin(tk.Tk, DataServer):
 		#Label tout en haut
 		self.title_font = font.Font(family="Tahoma", size=16, weight="bold", underline=True)
 		self.label = tk.Label(self, text="Entrainement G.M.T", font=self.title_font)
+		self.rowconfigure(0, weight=0)
 		self.label.grid(column=4,row=0)
 
 		#Frame historique
@@ -70,7 +71,7 @@ class MainWin(tk.Tk, DataServer):
 
 		#Liste pré enregistrement
 		self.list_pre_enregistrement = tk.Listbox(self.frame_pre_enregistrement, yscrollcommand=self.scrollbar_pre_enregistrement.set)
-		self.list_pre_enregistrement.grid(column=0,row=0, sticky='nesw')
+		self.list_pre_enregistrement.grid(column=0, row=0, sticky='nesw')
         
 		self.data_list_historique = db.list_mouvements_info(self.user_id)
 		for i in range(len(self.data_list_historique)):
@@ -83,7 +84,7 @@ class MainWin(tk.Tk, DataServer):
 		self.scrollbar_pre_enregistrement.config(command = self.list_pre_enregistrement.yview )
 
 		#Afficher la frame pré-enregistrement
-		self.frame_pre_enregistrement.grid(column=0, columnspan= 2,row=1,rowspan = 9,sticky='nesw')
+		self.frame_pre_enregistrement.grid(column=0, columnspan= 2, row=1, rowspan = 9, ipadx=10,  sticky='nesw')
 		self.frame_pre_enregistrement.columnconfigure(0, weight = 1)
 		self.frame_pre_enregistrement.rowconfigure(0, weight=1)
 
@@ -93,12 +94,12 @@ class MainWin(tk.Tk, DataServer):
 		#Bouton pré-enregistrement
 		self.button_preenregistrement = tk.Button(self, text="Pré-enregistrement", font=self.font)
 		self.button_preenregistrement.bind('<Button-1>', self.afficher_preenregistrement)
-		self.button_preenregistrement.grid(column=0,row=0, sticky='nesw')
+		self.button_preenregistrement.grid(column=0, row=0, sticky='nesw')
         
         #Bouton historique
 		self.button_historique = tk.Button(self, text="Historique", font=self.font)
 		self.button_historique.bind('<Button-1>', self.afficher_historique)
-		self.button_historique.grid(column=1,row=0, sticky="nesw")
+		self.button_historique.grid(column=1, row=0, sticky="nesw")
 		
 		#cadre visualisation
 		self.canevas = tk.Canvas(self, background='lightblue') #width=400, height=500
@@ -116,7 +117,8 @@ class MainWin(tk.Tk, DataServer):
 
 		self.label_enregistrement = tk.Label(text="Commencer l'enregistrement")
 		self.label_enregistrement.grid(row=12, column=3)
-		self.label_pourcentage = tk.Label(text='Votre mouvement a 20% de précision')
+		self.precision_var = tk.StringVar()
+		self.label_pourcentage = tk.Label(textvariable=self.precision_var)
 		self.label_pourcentage.grid(row=12, column=5)
         
         #image bouton start
@@ -147,7 +149,7 @@ class MainWin(tk.Tk, DataServer):
 		"""
 		self.running = True
 
-		idMvt = self.add_movement_data(self.user_id, 1, )
+		idMvt = db.add_movement_data(self.user_id, 1, '1970-01-01 01:01:01', None)
 		self.server_event.idMvt = idMvt
 		self.server_event.set()
 
@@ -265,17 +267,16 @@ class MainWin(tk.Tk, DataServer):
 			except queue.Empty:
 				break
 
-		data_th = perceptron.get_mvt_name(data)
+		data_th = perceptron.predict(data)
 
 		value = cp.comparaison(data_th, data)
 
 		print(f'{value=}')
+		self.precision_var.set(f'{value=}%')
 		# TODO - Update StringVar
   
 		self.after(1000, self.get_current_comp)
 
-
-														 
 if __name__ == "__main__":
-	fen = MainWin(0)
+	fen = MainWin(1)
 	fen.mainloop()
