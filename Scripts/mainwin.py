@@ -114,12 +114,14 @@ class MainWin(tk.Tk, DataServer):
         
         #image bouton start
 		self.img_start = tk.PhotoImage(file='Scripts/images/start.png')
+		self.img_pause = tk.PhotoImage(file='Scripts/images/pause.png')
+		self.img_stop = tk.PhotoImage(file='Scripts/images/stop.png')
 		
 		self.bouton_start = tk.Button(self, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
 		self.bouton_start.grid(row=11, column=3)
 		
-		self.bouton_restart = tk.Button(self, text='▶', bg='lightgreen')
+		self.bouton_restart = tk.Button(self, image=self.img_start)
 		
 		#Exit button
 		self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy)
@@ -150,11 +152,11 @@ class MainWin(tk.Tk, DataServer):
 			except queue.Empty:
 				break
 
-		self.bouton_pause = tk.Button(self, text='▌▌', bg='lightyellow')
+		self.bouton_pause = tk.Button(self, image=self.img_pause)
 		self.bouton_pause.bind('<Button-1>', self.pause)
 		self.bouton_pause.grid(row=11, column=2)
 		
-		self.bouton_arret = tk.Button(self, text='◼', bg='red')
+		self.bouton_arret = tk.Button(self, image=self.img_stop)
 		self.bouton_arret.bind( '<Button-1>', self.arret)
 		self.bouton_arret.grid(row=11, column=4)
 		
@@ -180,7 +182,7 @@ class MainWin(tk.Tk, DataServer):
 		self.server_event.clear()
 
 		self.bouton_pause.destroy()
-		self.bouton_restart = tk.Button(self, text='▶', bg='lightgreen')
+		self.bouton_restart = tk.Button(self, image=self.img_start)
 		self.bouton_restart.bind('<Button-1>', self.restart)
 		self.bouton_restart.grid(row=11, column=2)
 
@@ -193,7 +195,7 @@ class MainWin(tk.Tk, DataServer):
 
 		self.bouton_restart.destroy()
 
-		self.bouton_pause = tk.Button(self, text='▌▌', bg='lightyellow')
+		self.bouton_pause = tk.Button(self, image=self.img_pause)
 		self.bouton_pause.bind('<Button-1>', self.pause)
 		self.bouton_pause.grid(row=11, column=2)
 		
@@ -211,7 +213,7 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_arret.destroy()
 		self.bouton_restart.destroy()
 		self.bouton_pause.destroy()
-		self.bouton_start = tk.Button(self, text='▶', bg='lightgreen')
+		self.bouton_start = tk.Button(self, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
 		self.bouton_start.grid(row=11, column=3)
 
