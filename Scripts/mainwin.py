@@ -3,14 +3,13 @@ Affichage de la Fenêtre Principale
 '''
 import datetime
 import queue
-import time
 import tkinter as tk
 from tkinter import messagebox
 from dataclass import *
 from database import db
+import perceptron
 import comparaison as cp
 from server import DataServer
-from tkinter import PhotoImage
 import namewin
 
 mvt_exp = MesureVect.from_raw_list([(0,0,1,2,3,1),(1,1,4,5,6,2),(2,2,7,8,9,3)])
@@ -93,7 +92,7 @@ class MainWin(tk.Tk, DataServer):
 		self.button_preenregistrement.grid(column=0, row=0, sticky='nesw')
         
         #Bouton historique
-		self.button_historique = tk.Button(self, text="ᅠHistoriqueᅠ")
+		self.button_historique = tk.Button(self, text="Historique")
 		self.button_historique.bind('<Button-1>', self.afficher_historique)
 		self.button_historique.grid(column=1, row=0, sticky="nesw")
 		
@@ -113,15 +112,20 @@ class MainWin(tk.Tk, DataServer):
 
 		self.label_enregistrement = tk.Label(text="Commencer l'enregistrement")
 		self.label_enregistrement.grid(row=12, column=3)
+		self.precision_var = tk.StringVar()
+		self.label_pourcentage = tk.Label(textvariable=self.precision_var)
+		self.label_pourcentage.grid(row=12, column=5)
         
         #image bouton start
 		self.img_start = tk.PhotoImage(file='Scripts/images/start.png')
+		self.img_pause = tk.PhotoImage(file='Scripts/images/pause.png')
+		self.img_stop = tk.PhotoImage(file='Scripts/images/stop.png')
 		
 		self.bouton_start = tk.Button(self, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
 		self.bouton_start.grid(row=11, column=3)
 		
-		self.bouton_restart = tk.Button(self, text='▶', bg='lightgreen')
+		self.bouton_restart = tk.Button(self, image=self.img_start)
 		
 		#Exit button
 		self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy)
@@ -139,18 +143,24 @@ class MainWin(tk.Tk, DataServer):
 		Démarrage de l'enregistrement, création boutons pause et arret
 		"""
 		self.running = True
+
+		idMvt = db.add_movement_data(self.user_id, 1, '1970-01-01 01:01:01', None)
+		self.server_event.idMvt = idMvt
 		self.server_event.set()
+
+		self.get_current_comp()
+
 		while True: # Clear the queue
 			try:
 				self.dataQueue.get_nowait()
 			except queue.Empty:
 				break
 
-		self.bouton_pause = tk.Button(self, text='▌▌', bg='lightyellow')
+		self.bouton_pause = tk.Button(self, image=self.img_pause)
 		self.bouton_pause.bind('<Button-1>', self.pause)
 		self.bouton_pause.grid(row=11, column=2)
 		
-		self.bouton_arret = tk.Button(self, text='◼', bg='red')
+		self.bouton_arret = tk.Button(self, image=self.img_stop)
 		self.bouton_arret.bind( '<Button-1>', self.arret)
 		self.bouton_arret.grid(row=11, column=4)
 		
@@ -176,7 +186,7 @@ class MainWin(tk.Tk, DataServer):
 		self.server_event.clear()
 
 		self.bouton_pause.destroy()
-		self.bouton_restart = tk.Button(self, text='▶', bg='lightgreen')
+		self.bouton_restart = tk.Button(self, image=self.img_start)
 		self.bouton_restart.bind('<Button-1>', self.restart)
 		self.bouton_restart.grid(row=11, column=2)
 
@@ -189,7 +199,7 @@ class MainWin(tk.Tk, DataServer):
 
 		self.bouton_restart.destroy()
 
-		self.bouton_pause = tk.Button(self, text='▌▌', bg='lightyellow')
+		self.bouton_pause = tk.Button(self, image=self.img_pause)
 		self.bouton_pause.bind('<Button-1>', self.pause)
 		self.bouton_pause.grid(row=11, column=2)
 		
@@ -207,12 +217,12 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_arret.destroy()
 		self.bouton_restart.destroy()
 		self.bouton_pause.destroy()
-		self.bouton_start = tk.Button(self, text='▶', bg='lightgreen')
+		self.bouton_start = tk.Button(self, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
 		self.bouton_start.grid(row=11, column=3)
 
-		text = cp.comparaison(data_th, mvt_exp) 
-		self.resultat = messagebox.showinfo(title='Info', message=text)
+		# text = cp.comparaison(data_th, mvt_exp) 
+		# self.resultat = messagebox.showinfo(title='Info', message=text)
 
 		self.choix_sauvegarde = messagebox.askquestion(message='Voulez vous sauvegarder votre enregistrement ?', type='yesno')
 
@@ -239,11 +249,29 @@ class MainWin(tk.Tk, DataServer):
 		win = namewin.NameWin(self)
 		nom = win.nom
 
-		for mesure in mvt_exp:
-			db.add_mesure_vect(mesure.idCapteur, mesure.idPaquet, mesure.idMvmt, mesure.date, mesure.x, mesure.y, mesure.z)
+		db.rename_donnees(nom)
 
+	def get_current_comp(self):
+		if not self.running:
+			return
+		data = []
+		
+		while True: # Get all data from queue
+			try:
+				data.append(self.dataQueue.get_nowait())
+			except queue.Empty:
+				break
 
-														 
+		data_th = perceptron.predict(data)
+
+		value = cp.comparaison(data_th, data)
+
+		print(f'{value=}')
+		self.precision_var.set(f'{value=}%')
+		# TODO - Update StringVar
+  
+		self.after(1000, self.get_current_comp)
+
 if __name__ == "__main__":
-	fen = MainWin(0)
+	fen = MainWin(1)
 	fen.mainloop()
