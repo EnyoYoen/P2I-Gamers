@@ -9,11 +9,11 @@ db = Database()
 db.connexion()
 
 def register(date:str):
-    sql = "SELECT * FROM MesureSimple WHERE date=%s"
+    sql = "SELECT * FROM MesuresSimples WHERE date=%s"
     m = db.sql(sql, [date])
     mvt = [m]
     
-    sql = "SELECT date FROM MesureSimple WHERE date > %s"
+    sql = "SELECT date FROM MesuresSimples WHERE date > %s"
     l_date = db.sql(sql, [date])
     print(l_date)
 
