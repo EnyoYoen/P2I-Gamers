@@ -8,6 +8,7 @@ import tkinter as tk
 from tkinter import messagebox
 from dataclass import *
 from database import db
+import perceptron
 import comparaison as cp
 from server import DataServer
 import namewin
@@ -89,13 +90,11 @@ class MainWin(tk.Tk, DataServer):
 		self.button_historique = tk.Button(self, text="ᅠHistoriqueᅠ")
 		self.button_historique.bind('<Button-1>', self.afficher_historique)
 		self.button_historique.grid(column=1,row=1, sticky="nesw")
-		
 
 		#Bouton pré-enregistrement
 		self.label_preenregistrement= tk.Label(self, text='Pré-enregistrement')
 		self.label_preenregistrement.grid(column=0, row=1, sticky='nesw')
 
-		
 		#cadre visualisation
 		self.canevas = tk.Canvas(self, background='lightblue') #width=400, height=500
 		self.canevas.grid(column=2,columnspan=6,row=1,rowspan= 10, sticky='nesw')
@@ -131,6 +130,9 @@ class MainWin(tk.Tk, DataServer):
 		Démarrage de l'enregistrement, création boutons pause et arret
 		"""
 		self.running = True
+
+		idMvt = self.add_movement_data(self.user_id, 1, )
+		self.server_event.idMvt = idMvt
 		self.server_event.set()
 		while True: # Clear the queue
 			try:
@@ -203,8 +205,8 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_start.bind('<Button-1>', self.start)
 		self.bouton_start.grid(row=11, column=3)
 
-		text = cp.comparaison(data_th, mvt_exp) 
-		self.resultat = messagebox.showinfo(title='Info', message=text)
+		# text = cp.comparaison(data_th, mvt_exp) 
+		# self.resultat = messagebox.showinfo(title='Info', message=text)
 
 		self.choix_sauvegarde = messagebox.askquestion(message='Voulez vous sauvegarder votre enregistrement ?', type='yesno')
 
@@ -214,12 +216,30 @@ class MainWin(tk.Tk, DataServer):
 	def Sauvegarde(self):
 		self.user_id
 		
-		win = namewin.NameWin(self)
+		win = namewin.NameWin()
 		nom = win.nom
 
-		for mesure in mvt_exp:
-			db.add_mesure_vect(mesure.idCapteur, mesure.idPaquet, mesure.idMvmt, mesure.date, mesure.x, mesure.y, mesure.z)
+		db.rename_donnees(nom)
 
+	def get_current_comp(self):
+		if not self.running:
+			return
+		data = []
+		
+		while True: # Get all data from queue
+			try:
+				data.append(self.dataQueue.get_nowait())
+			except queue.Empty:
+				break
+
+		data_th = perceptron.get_mvt_name(data)
+
+		value = cp.comparaison(data_th, data)
+
+		print(f'{value=}')
+		# TODO - Update StringVar
+  
+		self.after(1000, self.get_current_comp)
 
 	def afficher_historique(self, event):
 		"""
