@@ -12,14 +12,14 @@ def calculate_sha256(data):
     return sha256_hash
 
 
-def register_user(name, password, height):
+def register_user(name, password, height, is_student):
     liste = db.list_users()
     for i in liste:
         user = i.username
         if name == user:
             return False
     h_mdp = calculate_sha256(password)
-    db.add_user(name, h_mdp, height)
+    db.add_user(name, h_mdp, height, is_student)
     return db.last_user_id()
 
 
