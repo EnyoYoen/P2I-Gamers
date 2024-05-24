@@ -1,6 +1,7 @@
 '''
 Affichage de la Fenêtre Principale
 '''
+import datetime
 import queue
 import time
 import tkinter as tk
@@ -9,6 +10,7 @@ from dataclass import *
 from database import db
 import comparaison as cp
 from server import DataServer
+import namewin
 
 mvt_exp = MesureVect.from_raw_list([(0,0,1,2,3,1),(1,1,4,5,6,2),(2,2,7,8,9,3)])
 data_th = {"aurevoir":MesureVect.from_raw_list([(0,3,10,9,8,1),(0,4,7,6,5,1.5),(0,5,4,3,2,2),(0,6,1,1,1,2.6),(0,7,1,2,3,3)]),
@@ -70,7 +72,7 @@ class MainWin(tk.Tk, DataServer):
 		#Liste pré enregistrement
 		self.list_pre_enregistrement = tk.Listbox(self.frame_pre_enregistrement, yscrollcommand=self.scrollbar_pre_enregistrement.set)
 		self.list_pre_enregistrement.grid(column=0,row=0, sticky='nesw')
-        
+
 
 		for i in range(50):
 			self.list_historique.insert(tk.END, str(i) + ' - historique') #A modifier
@@ -102,7 +104,7 @@ class MainWin(tk.Tk, DataServer):
 		self.canevas.grid(column=2,columnspan=6,row=1,rowspan= 10, sticky='nesw')
 		
 		#gestion enregistrement
-		self.duree = 0
+		self.start_time = 0
 		self.running = False
 		self.chrono = tk.Label(text='00:00:00')
 		self.chrono.grid(row=13, column=3)
@@ -148,6 +150,7 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_arret.grid(row=11, column=4)
 		
 		self.bouton_start.destroy()
+		self.start_time = datetime.datetime.now()
 		self.update_time()
 
 	def update_time(self):
@@ -155,11 +158,9 @@ class MainWin(tk.Tk, DataServer):
 		Mise à jour du temps
 		"""
 		if self.running == True :
-			self.duree +=1
-			minutes = self.duree // 60
-			heures = minutes // 60
-			secondes = self.duree - minutes * 60 - heures * 3600
-			self.chrono.config(text=f'{heures:02}:{minutes:02}:{secondes:02}')
+			d = datetime.datetime.now() - self.start_time
+			txt = (datetime.datetime.fromtimestamp(d.total_seconds()) - datetime.timedelta(hours=1)).strftime('%H:%M:%S')
+			self.chrono.config(text=txt)
 			self.after(1000, self.update_time)
 
 	def pause(self, event) :
@@ -196,8 +197,7 @@ class MainWin(tk.Tk, DataServer):
 		self.running = False
 		self.server_event.clear()
 
-		self.duree_memo = self.duree
-		self.duree = 0
+		self.duree_memo = int((datetime.datetime.now() - self.start_time).total_seconds())
 		self.chrono.config(text='00:00:00')
 		self.bouton_arret.destroy()
 		self.bouton_restart.destroy()
@@ -217,7 +217,8 @@ class MainWin(tk.Tk, DataServer):
 	def Sauvegarde(self):
 		self.user_id
 		
-		nom = messagebox.askinput('Test', 'Test2')
+		win = namewin.NameWin(self)
+		nom = win.nom
 
 		for mesure in mvt_exp:
 			db.add_mesure_vect(mesure.idCapteur, mesure.idPaquet, mesure.idMvmt, mesure.date, mesure.x, mesure.y, mesure.z)
