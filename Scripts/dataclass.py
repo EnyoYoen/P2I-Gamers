@@ -37,9 +37,10 @@ class DataClass:
 class MouvementInfo(DataClass):
 	KEYS = [
 		'idMvt',
-		'nom',
+		'idUtilisateur', # qui a créé le mouvement
+		'idDispositif',
 		'dateCreation',
-		'idUtilisateur' # qui a créé le mouvement
+		'name'
 	]
 
 class MesureSimple(DataClass):
