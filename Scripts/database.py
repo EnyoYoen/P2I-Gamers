@@ -167,7 +167,6 @@ class Database:
 		if save:
 			self.save()
 
-
 	def add_user(self, name, password, height, is_student):
 		"""Ajoute un utilisateur"""
 		sql = "INSERT INTO Utilisateurs (nomUtilisateur, mdp, taille, eleve) VALUES (%s, %s, %s, %s);"
