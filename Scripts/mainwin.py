@@ -135,7 +135,7 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_restart = tk.Button(self, image=self.img_start)
 		
 		#Exit button
-		self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy, fg='#444445', bg='#FFF3EE')
+		self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy, fg='#444445', bg='#FFE8DF')
 		self.exit_bouton.bind('<Button-1>',self.quitter)
 		self.exit_bouton.grid(row=14, column=0, columnspan=8)
 	
