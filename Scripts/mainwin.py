@@ -152,7 +152,7 @@ class MainWin(tk.Tk, DataServer):
 		self.running = True
 
 		self.idMvt = db.add_movement_data(self.user_id, 1, '1970-01-01 01:01:01', None) #récupère l'idMvt (en attribut) qui sera redéfini à chaque nouvel enregistrement
-		self.server_event.idMvt = idMvt
+		self.server_event.idMvt = self.idMvt
 		self.server_event.set()
 
 		#self.get_current_comp()
