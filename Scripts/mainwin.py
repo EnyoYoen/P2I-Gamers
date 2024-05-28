@@ -42,7 +42,7 @@ class MainWin(tk.Tk, DataServer):
 
 		#Label tout en haut
 		self.title_font = font.Font(family="Bahnschrift SemiBold Condensed", size=16)
-		self.label = tk.Label(self, text="ENTRAINEMENT G.M.T", font=self.title_font, fg='#A8ABD9')
+		self.label = tk.Label(self, text="ENTRAINEMENT G.M.T", font=self.title_font, fg='#93B2DB')
 		self.rowconfigure(0, weight=0)
 		self.columnconfigure(0, weight=0)
 		self.columnconfigure(1, weight=0)
@@ -114,13 +114,13 @@ class MainWin(tk.Tk, DataServer):
 		#gestion enregistrement
 		self.start_time = 0
 		self.running = False
-		self.chrono = tk.Label(text='00:00:00')
+		self.chrono = tk.Label(text='00:00:00', fg='#444445')
 		self.chrono.grid(row=13, column=0, columnspan=8)
 
-		self.label_enregistrement = tk.Label(text="Commencer l'enregistrement")
+		self.label_enregistrement = tk.Label(text="Commencer l'enregistrement", fg='#444445')
 		self.label_enregistrement.grid(row=12, column=0, columnspan=8)
 		self.precision_var = tk.StringVar()
-		self.label_pourcentage = tk.Label(textvariable=self.precision_var)
+		self.label_pourcentage = tk.Label(textvariable=self.precision_var, fg='#444445')
 		self.label_pourcentage.grid(row=12, column=5)
         
         #image bouton start
@@ -135,7 +135,7 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_restart = tk.Button(self, image=self.img_start)
 		
 		#Exit button
-		self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy)
+		self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy, fg='#444445', bg='#FFF3EE')
 		self.exit_bouton.bind('<Button-1>',self.quitter)
 		self.exit_bouton.grid(row=14, column=0, columnspan=8)
 	
