@@ -253,7 +253,7 @@ class MainWin(tk.Tk, DataServer):
 	def Sauvegarde(self):
 		self.user_id
 		
-		win = namewin.NameWin(self)
+		win = namewin.NameWin()
 		nom = win.nom
 
 		db.rename_donnees(nom)
