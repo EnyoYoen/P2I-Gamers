@@ -44,7 +44,9 @@ class MainWin(tk.Tk, DataServer):
 		self.title_font = font.Font(family="Tahoma", size=16, weight="bold", underline=True)
 		self.label = tk.Label(self, text="Entrainement G.M.T", font=self.title_font)
 		self.rowconfigure(0, weight=0)
-		self.label.grid(column=4,row=0)
+		self.columnconfigure(0, weight=0)
+		self.columnconfigure(1, weight=0)
+		self.label.grid(row=0, column=0, columnspan=8)
 
 		#Frame historique
 		self.frame_historique = tk.Frame(self)
@@ -92,17 +94,17 @@ class MainWin(tk.Tk, DataServer):
 		self.font = font.Font(family="Helvetica", size=8, weight="bold")
 
 		#Bouton pré-enregistrement
-		self.button_preenregistrement = tk.Button(self, text="Pré-enregistrement", font=self.font)
+		self.button_preenregistrement = tk.Button(self, text="Enregistrement", font=self.font)
 		self.button_preenregistrement.bind('<Button-1>', self.afficher_preenregistrement)
 		self.button_preenregistrement.grid(column=0, row=0, sticky='nesw')
         
         #Bouton historique
-		self.button_historique = tk.Button(self, text="Historique", font=self.font)
+		self.button_historique = tk.Button(self, text="Historique", font=self.font, padx= 20)
 		self.button_historique.bind('<Button-1>', self.afficher_historique)
 		self.button_historique.grid(column=1, row=0, sticky="nesw")
 		
 		#cadre visualisation
-		self.canevas = tk.Canvas(self, background='lightblue') #width=400, height=500
+		self.canevas = tk.Canvas(self, background='lightblue')
 		self.canevas.grid(column=2,columnspan=6,row=1,rowspan= 10, sticky='nesw')
         
         #ajustement de la taille relative
@@ -113,10 +115,10 @@ class MainWin(tk.Tk, DataServer):
 		self.start_time = 0
 		self.running = False
 		self.chrono = tk.Label(text='00:00:00')
-		self.chrono.grid(row=13, column=3)
+		self.chrono.grid(row=13, column=0, columnspan=8)
 
 		self.label_enregistrement = tk.Label(text="Commencer l'enregistrement")
-		self.label_enregistrement.grid(row=12, column=3)
+		self.label_enregistrement.grid(row=12, column=0, columnspan=8)
 		self.precision_var = tk.StringVar()
 		self.label_pourcentage = tk.Label(textvariable=self.precision_var)
 		self.label_pourcentage.grid(row=12, column=5)
@@ -128,14 +130,14 @@ class MainWin(tk.Tk, DataServer):
 		
 		self.bouton_start = tk.Button(self, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
-		self.bouton_start.grid(row=11, column=3)
+		self.bouton_start.grid(row=11, column=0, columnspan=8)
 		
 		self.bouton_restart = tk.Button(self, image=self.img_start)
 		
 		#Exit button
 		self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy)
 		self.exit_bouton.bind('<Button-1>',self.quitter)
-		self.exit_bouton.grid(row=14, column=3)
+		self.exit_bouton.grid(row=14, column=0, columnspan=8)
 	
 	def quitter(self, event):
 		"""
@@ -153,7 +155,7 @@ class MainWin(tk.Tk, DataServer):
 		self.server_event.idMvt = idMvt
 		self.server_event.set()
 
-		self.get_current_comp()
+		#self.get_current_comp()
 
 		while True: # Clear the queue
 			try:
@@ -163,11 +165,11 @@ class MainWin(tk.Tk, DataServer):
 
 		self.bouton_pause = tk.Button(self, image=self.img_pause)
 		self.bouton_pause.bind('<Button-1>', self.pause)
-		self.bouton_pause.grid(row=11, column=2)
+		self.bouton_pause.grid(row=11, column=3)
 		
 		self.bouton_arret = tk.Button(self, image=self.img_stop)
 		self.bouton_arret.bind( '<Button-1>', self.arret)
-		self.bouton_arret.grid(row=11, column=4)
+		self.bouton_arret.grid(row=11, column=5)
 		
 		self.bouton_start.destroy()
 		self.start_time = datetime.datetime.now()
@@ -193,7 +195,7 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_pause.destroy()
 		self.bouton_restart = tk.Button(self, image=self.img_start)
 		self.bouton_restart.bind('<Button-1>', self.restart)
-		self.bouton_restart.grid(row=11, column=2)
+		self.bouton_restart.grid(row=11, column=3)
 
 	def restart(self, event) :
 		"""
@@ -206,7 +208,7 @@ class MainWin(tk.Tk, DataServer):
 
 		self.bouton_pause = tk.Button(self, image=self.img_pause)
 		self.bouton_pause.bind('<Button-1>', self.pause)
-		self.bouton_pause.grid(row=11, column=2)
+		self.bouton_pause.grid(row=11, column=3)
 		
 		self.update_time()
 
@@ -224,7 +226,7 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_pause.destroy()
 		self.bouton_start = tk.Button(self, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
-		self.bouton_start.grid(row=11, column=3)
+		self.bouton_start.grid(row=11, column=0, columnspan=8)
 
 		# text = cp.comparaison(data_th, mvt_exp) 
 		# self.resultat = messagebox.showinfo(title='Info', message=text)
