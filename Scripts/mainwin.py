@@ -18,10 +18,11 @@ data_th = {"aurevoir":MesureVect.from_raw_list([(0,3,10,9,8,1),(0,4,7,6,5,1.5),(
 					 "coucou":MesureVect.from_raw_list([(0,13,1,2,3,1),(0,12,4,5,6,1.5),(0,11,7,8,9,2),(0,10,1,1,1,2.6),(0,9,1,2,3,3),(0,8,0,0,0,4)])}
 
 class MainWin(tk.Tk, DataServer):
-	def __init__(self,user_id):
+	def __init__(self, user_id):
 		super().__init__()
 		DataServer.__init__(self)
-		self.user_id = user_id
+		self.user = db.get_user(user_id)
+
 
 		self.title('G.M.T.')
 		# récuperation de la résolution de l'écran
@@ -75,9 +76,9 @@ class MainWin(tk.Tk, DataServer):
 		self.list_pre_enregistrement = tk.Listbox(self.frame_pre_enregistrement, yscrollcommand=self.scrollbar_pre_enregistrement.set)
 		self.list_pre_enregistrement.grid(column=0, row=0, sticky='nesw')
         
-		self.data_list_historique = db.list_mouvements_info(self.user_id)
+		self.data_list_historique = db.list_mouvements_info(self.user.idUtilisateur)
 		for i in range(len(self.data_list_historique)):
-			self.list_historique.insert(tk.END, str(i+1) + ' - ' + str(self.data_list_historique[i].name) ) 
+			self.list_historique.insert(tk.END, str(i+1) + ' - ' + str(self.data_list_historique[i].dateCreation) ) 
 
 		self.data_list_pre_enregistrement = db.list_mouvements_info(1) #id 1 pour les pre-enregistrement
 		for i in range(len(self.data_list_pre_enregistrement)):
@@ -151,7 +152,7 @@ class MainWin(tk.Tk, DataServer):
 		"""
 		self.running = True
 
-		idMvt = db.add_movement_data(self.user_id, 1, '1970-01-01 01:01:01', None)
+		idMvt = db.add_movement_data(self.user.idUtilisateur, 1, '1970-01-01 01:01:01', None)
 		self.server_event.idMvt = idMvt
 		self.server_event.set()
 
@@ -231,10 +232,19 @@ class MainWin(tk.Tk, DataServer):
 		# text = cp.comparaison(data_th, mvt_exp) 
 		# self.resultat = messagebox.showinfo(title='Info', message=text)
 
-		self.choix_sauvegarde = messagebox.askquestion(message='Voulez vous sauvegarder votre enregistrement ?', type='yesno')
+		
+		self.server_event.idMvt 
 
-		if self.choix_sauvegarde == messagebox.YES:
-			self.Sauvegarde()
+		historique = db.list_mouvements_info(self.user.idUtilisateur)  #Moyen opti :/
+		self.list_historique.insert(tk.END, str(len(historique)) + ' - ' + str(self.data_list_historique[-1].dateCreation) ) 
+
+		if not bool(self.user.eleve):
+			self.choix_sauvegarde = messagebox.askquestion(message='Voulez-vous sauvegarder votre enregistrement ?', type='yesno')
+			if self.choix_sauvegarde == messagebox.YES:
+				self.Sauvegarde()
+				enregistrement = db.list_mouvements_info(1) #id 1 pour les pre-enregistrement
+				self.list_pre_enregistrement.insert(tk.END, str(len(enregistrement)) + ' - ' + str(self.data_list_pre_enregistrement[-1].name) )
+
 			
 	def afficher_historique(self, event):
 		"""
@@ -251,12 +261,12 @@ class MainWin(tk.Tk, DataServer):
 		self.frame_pre_enregistrement.grid(column=0,columnspan= 2,row=1,rowspan = 9,sticky='nesw')		
 
 	def Sauvegarde(self):
-		self.user_id
-		
-		win = namewin.NameWin()
-		nom = win.nom
-
-		db.rename_donnees(nom)
+		self.user.idUtilisateur
+		name = []
+		namewin.NameWin(name)
+		nom = name[0]  #NE MARCHE PAS !!!!!
+		idmvt = self.server_event.idMvt 
+		db.rename_donnees(idmvt,nom)
 
 	def get_current_comp(self):
 		if not self.running:
@@ -280,5 +290,5 @@ class MainWin(tk.Tk, DataServer):
 		self.after(1000, self.get_current_comp)
 
 if __name__ == "__main__":
-	fen = MainWin(1)
-	fen.mainloop()
+	fen = MainWin(19) #1 admin, #10 test #19 test_teacher #20 test_eleve
+	fen.mainloop()	

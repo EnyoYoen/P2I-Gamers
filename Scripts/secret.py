@@ -5,3 +5,5 @@ DATABASE_LOGIN = {
 	'password': 'G224_B',
 	'database': 'G224_B_BD1'
 }
+
+ID_DISPOSITF = 1

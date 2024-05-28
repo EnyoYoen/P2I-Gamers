@@ -85,6 +85,5 @@ class Utilisateur(DataClass):
 		'username',
 		'password',
 		'taille',
-		'age',
-		'poids'
+		'eleve'
 	]

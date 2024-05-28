@@ -194,12 +194,14 @@ class Database:
 		return idMvmt
 
 	def rename_donnees(self, idMvt, name, save=True):
-		sql = "UPDATE DonneesMouvements SET user=1, nom=%s WHERE idDonneeMouvement=%s"
+		sql = "UPDATE DonneesMouvements SET idUtilisateur=1, nom=%s WHERE idDonneeMouvement=%s"
 		self.sql(sql, [name, idMvt])
 		if save:
 			self.save()
 
 	def last_user_id(self):
 		return self.sql("SELECT idUtilisateur FROM Utilisateurs ORDER BY idUtilisateur DESC LIMIT 1")[0][0]
+
+		
 
 db = Database()
