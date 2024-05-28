@@ -41,8 +41,8 @@ class MainWin(tk.Tk, DataServer):
 			self.rowconfigure(i, weight=1)
 
 		#Label tout en haut
-		self.title_font = font.Font(family="Tahoma", size=16, weight="bold", underline=True)
-		self.label = tk.Label(self, text="Entrainement G.M.T", font=self.title_font)
+		self.title_font = font.Font(family="Bahnschrift SemiBold Condensed", size=16)
+		self.label = tk.Label(self, text="ENTRAINEMENT G.M.T", font=self.title_font, fg='#93B2DB')
 		self.rowconfigure(0, weight=0)
 		self.columnconfigure(0, weight=0)
 		self.columnconfigure(1, weight=0)
@@ -91,15 +91,15 @@ class MainWin(tk.Tk, DataServer):
 		self.frame_pre_enregistrement.rowconfigure(0, weight=1)
 
 		#police d'écriture
-		self.font = font.Font(family="Helvetica", size=8, weight="bold")
+		self.font = font.Font(family="Bahnschrift SemiLight SemiCondensed", size=8)
 
 		#Bouton pré-enregistrement
-		self.button_preenregistrement = tk.Button(self, text="Enregistrement", font=self.font)
+		self.button_preenregistrement = tk.Button(self, text="Enregistrement", font=self.font, fg='#353535', bg='#ECFCCA')
 		self.button_preenregistrement.bind('<Button-1>', self.afficher_preenregistrement)
 		self.button_preenregistrement.grid(column=0, row=0, sticky='nesw')
         
         #Bouton historique
-		self.button_historique = tk.Button(self, text="Historique", font=self.font, padx= 20)
+		self.button_historique = tk.Button(self, text="Historique", font=self.font, padx= 20, fg='#353535', bg='#FCEECA')
 		self.button_historique.bind('<Button-1>', self.afficher_historique)
 		self.button_historique.grid(column=1, row=0, sticky="nesw")
 		
@@ -114,13 +114,13 @@ class MainWin(tk.Tk, DataServer):
 		#gestion enregistrement
 		self.start_time = 0
 		self.running = False
-		self.chrono = tk.Label(text='00:00:00')
+		self.chrono = tk.Label(text='00:00:00', fg='#444445')
 		self.chrono.grid(row=13, column=0, columnspan=8)
 
-		self.label_enregistrement = tk.Label(text="Commencer l'enregistrement")
+		self.label_enregistrement = tk.Label(text="Commencer l'enregistrement", fg='#444445')
 		self.label_enregistrement.grid(row=12, column=0, columnspan=8)
 		self.precision_var = tk.StringVar()
-		self.label_pourcentage = tk.Label(textvariable=self.precision_var)
+		self.label_pourcentage = tk.Label(textvariable=self.precision_var, fg='#444445')
 		self.label_pourcentage.grid(row=12, column=5)
         
         #image bouton start
@@ -135,7 +135,7 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_restart = tk.Button(self, image=self.img_start)
 		
 		#Exit button
-		self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy)
+		self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy, fg='#444445', bg='#FFE8DF')
 		self.exit_bouton.bind('<Button-1>',self.quitter)
 		self.exit_bouton.grid(row=14, column=0, columnspan=8)
 	
