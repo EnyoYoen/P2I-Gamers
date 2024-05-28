@@ -94,7 +94,7 @@ class MainWin(tk.Tk, DataServer):
 		self.font = font.Font(family="Bahnschrift SemiLight SemiCondensed", size=8)
 
 		#Bouton pré-enregistrement
-		self.button_preenregistrement = tk.Button(self, text="Enregistrement", font=self.font, fg='#353535', bg='#ECFCCA')
+		self.button_preenregistrement = tk.Button(self, text="Enregistrement", font=self.font, padx= 10, fg='#353535', bg='#ECFCCA')
 		self.button_preenregistrement.bind('<Button-1>', self.afficher_preenregistrement)
 		self.button_preenregistrement.grid(column=0, row=0, sticky='nesw')
         
