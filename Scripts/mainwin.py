@@ -41,8 +41,8 @@ class MainWin(tk.Tk, DataServer):
 			self.rowconfigure(i, weight=1)
 
 		#Label tout en haut
-		self.title_font = font.Font(family="Tahoma", size=16, weight="bold", underline=True)
-		self.label = tk.Label(self, text="Entrainement G.M.T", font=self.title_font)
+		self.title_font = font.Font(family="Bahnschrift SemiBold Condensed", size=16)
+		self.label = tk.Label(self, text="ENTRAINEMENT G.M.T", font=self.title_font, fg='#A8ABD9')
 		self.rowconfigure(0, weight=0)
 		self.label.grid(column=4,row=0)
 
@@ -89,15 +89,15 @@ class MainWin(tk.Tk, DataServer):
 		self.frame_pre_enregistrement.rowconfigure(0, weight=1)
 
 		#police d'écriture
-		self.font = font.Font(family="Helvetica", size=8, weight="bold")
+		self.font = font.Font(family="Bahnschrift SemiLight SemiCondensed", size=8)
 
 		#Bouton pré-enregistrement
-		self.button_preenregistrement = tk.Button(self, text="Pré-enregistrement", font=self.font)
+		self.button_preenregistrement = tk.Button(self, text="Pré-enregistrement", font=self.font, fg='#353535', bg='#ECFCCA')
 		self.button_preenregistrement.bind('<Button-1>', self.afficher_preenregistrement)
 		self.button_preenregistrement.grid(column=0, row=0, sticky='nesw')
         
         #Bouton historique
-		self.button_historique = tk.Button(self, text="Historique", font=self.font)
+		self.button_historique = tk.Button(self, text="Historique", font=self.font, fg='#353535', bg='#FCEECA')
 		self.button_historique.bind('<Button-1>', self.afficher_historique)
 		self.button_historique.grid(column=1, row=0, sticky="nesw")
 		
