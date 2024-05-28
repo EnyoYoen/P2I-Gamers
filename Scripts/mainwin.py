@@ -3,15 +3,15 @@ Affichage de la Fenêtre Principale
 '''
 import datetime
 import queue
-import time
 import tkinter as tk
 from tkinter import messagebox
 from dataclass import *
 from database import db
+import perceptron
 import comparaison as cp
 from server import DataServer
-from tkinter import PhotoImage
 import namewin
+from tkinter import font
 
 mvt_exp = MesureVect.from_raw_list([(0,0,1,2,3,1),(1,1,4,5,6,2),(2,2,7,8,9,3)])
 data_th = {"aurevoir":MesureVect.from_raw_list([(0,3,10,9,8,1),(0,4,7,6,5,1.5),(0,5,4,3,2,2),(0,6,1,1,1,2.6),(0,7,1,2,3,3)]),
@@ -41,8 +41,12 @@ class MainWin(tk.Tk, DataServer):
 			self.rowconfigure(i, weight=1)
 
 		#Label tout en haut
-		self.label = tk.Label(self, text="Entrainement G.M.T")
-		self.label.grid(column=4,row=0)
+		self.title_font = font.Font(family="Bahnschrift SemiBold Condensed", size=16)
+		self.label = tk.Label(self, text="ENTRAINEMENT G.M.T", font=self.title_font, fg='#93B2DB')
+		self.rowconfigure(0, weight=0)
+		self.columnconfigure(0, weight=0)
+		self.columnconfigure(1, weight=0)
+		self.label.grid(row=0, column=0, columnspan=8)
 
 		#Frame historique
 		self.frame_historique = tk.Frame(self)
@@ -69,7 +73,7 @@ class MainWin(tk.Tk, DataServer):
 
 		#Liste pré enregistrement
 		self.list_pre_enregistrement = tk.Listbox(self.frame_pre_enregistrement, yscrollcommand=self.scrollbar_pre_enregistrement.set)
-		self.list_pre_enregistrement.grid(column=0,row=0, sticky='nesw')
+		self.list_pre_enregistrement.grid(column=0, row=0, sticky='nesw')
         
 		self.data_list_historique = db.list_mouvements_info(self.user_id)
 		for i in range(len(self.data_list_historique)):
@@ -82,28 +86,25 @@ class MainWin(tk.Tk, DataServer):
 		self.scrollbar_pre_enregistrement.config(command = self.list_pre_enregistrement.yview )
 
 		#Afficher la frame pré-enregistrement
-		self.frame_pre_enregistrement.grid(column=0, columnspan= 2,row=1,rowspan = 9,sticky='nesw')
+		self.frame_pre_enregistrement.grid(column=0, columnspan= 2, row=1, rowspan = 9, ipadx=10,  sticky='nesw')
 		self.frame_pre_enregistrement.columnconfigure(0, weight = 1)
 		self.frame_pre_enregistrement.rowconfigure(0, weight=1)
 
-		#Bouton historique
-		self.button_historique = tk.Button(self, text="ᅠHistoriqueᅠ")
-		self.button_historique.bind('<Button-1>', self.afficher_historique)
-		self.button_historique.grid(column=1,row=1, sticky="nesw")
-		
+		#police d'écriture
+		self.font = font.Font(family="Bahnschrift SemiLight SemiCondensed", size=8)
 
 		#Bouton pré-enregistrement
-		self.button_preenregistrement = tk.Button(self, text="Pré-enregistre")
+		self.button_preenregistrement = tk.Button(self, text="Enregistrement", font=self.font, fg='#353535', bg='#ECFCCA')
 		self.button_preenregistrement.bind('<Button-1>', self.afficher_preenregistrement)
-		self.button_preenregistrement.grid(column=0,row=0, sticky='nesw')
+		self.button_preenregistrement.grid(column=0, row=0, sticky='nesw')
         
         #Bouton historique
-		self.button_historique = tk.Button(self, text="ᅠHistoriqueᅠ")
+		self.button_historique = tk.Button(self, text="Historique", font=self.font, padx= 20, fg='#353535', bg='#FCEECA')
 		self.button_historique.bind('<Button-1>', self.afficher_historique)
-		self.button_historique.grid(column=1,row=0, sticky="nesw")
+		self.button_historique.grid(column=1, row=0, sticky="nesw")
 		
 		#cadre visualisation
-		self.canevas = tk.Canvas(self, background='lightblue') #width=400, height=500
+		self.canevas = tk.Canvas(self, background='lightblue')
 		self.canevas.grid(column=2,columnspan=6,row=1,rowspan= 10, sticky='nesw')
         
         #ajustement de la taille relative
@@ -113,25 +114,30 @@ class MainWin(tk.Tk, DataServer):
 		#gestion enregistrement
 		self.start_time = 0
 		self.running = False
-		self.chrono = tk.Label(text='00:00:00')
-		self.chrono.grid(row=13, column=3)
+		self.chrono = tk.Label(text='00:00:00', fg='#444445')
+		self.chrono.grid(row=13, column=0, columnspan=8)
 
-		self.label_enregistrement = tk.Label(text="Commencer l'enregistrement")
-		self.label_enregistrement.grid(row=12, column=3)
+		self.label_enregistrement = tk.Label(text="Commencer l'enregistrement", fg='#444445')
+		self.label_enregistrement.grid(row=12, column=0, columnspan=8)
+		self.precision_var = tk.StringVar()
+		self.label_pourcentage = tk.Label(textvariable=self.precision_var, fg='#444445')
+		self.label_pourcentage.grid(row=12, column=5)
         
         #image bouton start
-		self.img_start = tk.PhotoImage(file='images/start.png')
+		self.img_start = tk.PhotoImage(file='Scripts/images/start.png')
+		self.img_pause = tk.PhotoImage(file='Scripts/images/pause.png')
+		self.img_stop = tk.PhotoImage(file='Scripts/images/stop.png')
 		
 		self.bouton_start = tk.Button(self, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
-		self.bouton_start.grid(row=11, column=3)
+		self.bouton_start.grid(row=11, column=0, columnspan=8)
 		
-		self.bouton_restart = tk.Button(self, text='▶', bg='lightgreen')
+		self.bouton_restart = tk.Button(self, image=self.img_start)
 		
 		#Exit button
-		self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy)
+		self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy, fg='#444445', bg='#FFE8DF')
 		self.exit_bouton.bind('<Button-1>',self.quitter)
-		self.exit_bouton.grid(row=14, column=3)
+		self.exit_bouton.grid(row=14, column=0, columnspan=8)
 	
 	def quitter(self, event):
 		"""
@@ -144,20 +150,26 @@ class MainWin(tk.Tk, DataServer):
 		Démarrage de l'enregistrement, création boutons pause et arret
 		"""
 		self.running = True
+
+		idMvt = db.add_movement_data(self.user_id, 1, '1970-01-01 01:01:01', None)
+		self.server_event.idMvt = idMvt
 		self.server_event.set()
+
+		#self.get_current_comp()
+
 		while True: # Clear the queue
 			try:
 				self.dataQueue.get_nowait()
 			except queue.Empty:
 				break
 
-		self.bouton_pause = tk.Button(self, text='▌▌', bg='lightyellow')
+		self.bouton_pause = tk.Button(self, image=self.img_pause)
 		self.bouton_pause.bind('<Button-1>', self.pause)
-		self.bouton_pause.grid(row=11, column=2)
+		self.bouton_pause.grid(row=11, column=3)
 		
-		self.bouton_arret = tk.Button(self, text='◼', bg='red')
+		self.bouton_arret = tk.Button(self, image=self.img_stop)
 		self.bouton_arret.bind( '<Button-1>', self.arret)
-		self.bouton_arret.grid(row=11, column=4)
+		self.bouton_arret.grid(row=11, column=5)
 		
 		self.bouton_start.destroy()
 		self.start_time = datetime.datetime.now()
@@ -181,9 +193,9 @@ class MainWin(tk.Tk, DataServer):
 		self.server_event.clear()
 
 		self.bouton_pause.destroy()
-		self.bouton_restart = tk.Button(self, text='▶', bg='lightgreen')
+		self.bouton_restart = tk.Button(self, image=self.img_start)
 		self.bouton_restart.bind('<Button-1>', self.restart)
-		self.bouton_restart.grid(row=11, column=2)
+		self.bouton_restart.grid(row=11, column=3)
 
 	def restart(self, event) :
 		"""
@@ -194,9 +206,9 @@ class MainWin(tk.Tk, DataServer):
 
 		self.bouton_restart.destroy()
 
-		self.bouton_pause = tk.Button(self, text='▌▌', bg='lightyellow')
+		self.bouton_pause = tk.Button(self, image=self.img_pause)
 		self.bouton_pause.bind('<Button-1>', self.pause)
-		self.bouton_pause.grid(row=11, column=2)
+		self.bouton_pause.grid(row=11, column=3)
 		
 		self.update_time()
 
@@ -212,12 +224,12 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_arret.destroy()
 		self.bouton_restart.destroy()
 		self.bouton_pause.destroy()
-		self.bouton_start = tk.Button(self, text='▶', bg='lightgreen')
+		self.bouton_start = tk.Button(self, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
-		self.bouton_start.grid(row=11, column=3)
+		self.bouton_start.grid(row=11, column=0, columnspan=8)
 
-		text = cp.comparaison(data_th, mvt_exp) 
-		self.resultat = messagebox.showinfo(title='Info', message=text)
+		# text = cp.comparaison(data_th, mvt_exp) 
+		# self.resultat = messagebox.showinfo(title='Info', message=text)
 
 		self.choix_sauvegarde = messagebox.askquestion(message='Voulez vous sauvegarder votre enregistrement ?', type='yesno')
 
@@ -241,27 +253,32 @@ class MainWin(tk.Tk, DataServer):
 	def Sauvegarde(self):
 		self.user_id
 		
-		win = namewin.NameWin(self)
+		win = namewin.NameWin()
 		nom = win.nom
 
-		for mesure in mvt_exp:
-			db.add_mesure_vect(mesure.idCapteur, mesure.idPaquet, mesure.idMvmt, mesure.date, mesure.x, mesure.y, mesure.z)
+		db.rename_donnees(nom)
 
+	def get_current_comp(self):
+		if not self.running:
+			return
+		data = []
+		
+		while True: # Get all data from queue
+			try:
+				data.append(self.dataQueue.get_nowait())
+			except queue.Empty:
+				break
 
-	def afficher_historique(self, event):
-		"""
-		Affichage de l'historique (remplacer la liste )
-		"""
-		self.frame_pre_enregistrement.grid_forget()
-		self.frame_historique.grid(column=0,columnspan= 3,row=2,rowspan = 9,sticky='nesw')
+		data_th = perceptron.predict(data)
 
-	def afficher_preenregistrement(self, event):
-		"""
-		Affichage du pré-enregistrement (remplacer la liste )
-		"""
-		self.frame_historique.grid_forget()
-		self.frame_pre_enregistrement.grid(column=0,columnspan= 3,row=2,rowspan = 9,sticky='nesw')
-														 
+		value = cp.comparaison(data_th, data)
+
+		print(f'{value=}')
+		self.precision_var.set(f'{value=}%')
+		# TODO - Update StringVar
+  
+		self.after(1000, self.get_current_comp)
+
 if __name__ == "__main__":
-	fen = MainWin(0)
+	fen = MainWin(1)
 	fen.mainloop()

@@ -26,6 +26,9 @@ def train_MLP(train_data, test_data):
     
     return mlp
 
+def predict(mlp, data):
+    return mlp.predict(data)
+
 def save_MLP(mlp, filename = 'MLP.pkl'):
     with open(filename, 'wb') as fid:
         pickle.dump(mlp, fid)    
