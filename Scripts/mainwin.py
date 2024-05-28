@@ -151,7 +151,7 @@ class MainWin(tk.Tk, DataServer):
 		"""
 		self.running = True
 
-		idMvt = db.add_movement_data(self.user_id, 1, '1970-01-01 01:01:01', None)
+		self.idMvt = db.add_movement_data(self.user_id, 1, '1970-01-01 01:01:01', None) #récupère l'idMvt (en attribut) qui sera redéfini à chaque nouvel enregistrement
 		self.server_event.idMvt = idMvt
 		self.server_event.set()
 
@@ -228,6 +228,7 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_start.bind('<Button-1>', self.start)
 		self.bouton_start.grid(row=11, column=0, columnspan=8)
 
+		self.compare_message()
 		# text = cp.comparaison(data_th, mvt_exp) 
 		# self.resultat = messagebox.showinfo(title='Info', message=text)
 
@@ -235,7 +236,21 @@ class MainWin(tk.Tk, DataServer):
 
 		if self.choix_sauvegarde == messagebox.YES:
 			self.Sauvegarde()
-			
+
+	def compare_message(self) :
+		'''
+		Affiche l'analyse comparative à partir de la base de donnée
+		'''
+		mvt_exp = db.get_mesure_vect(self.idMvt)
+		mvt_the = {}
+		for li in db.list_mouvements_info(1) :
+			id = li[0]
+			name = li[4]
+			mvt_the[name] = db.get_mesure_vect(id) #a continuer
+		text = cp.comparaison(data_th, mvt_exp) 
+		self.resultat = messagebox.showinfo(title='Info', message=text)
+
+
 	def afficher_historique(self, event):
 		"""
 		Affichage de l'historique (remplacer la liste )
