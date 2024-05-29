@@ -229,12 +229,10 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_start.bind('<Button-1>', self.start)
 		self.bouton_start.grid(row=11, column=0, columnspan=8)
 
-		self.compare_message()
+		#self.compare_message()
 		# text = cp.comparaison(data_th, mvt_exp) 
 		# self.resultat = messagebox.showinfo(title='Info', message=text)
 
-		
-		self.server_event.idMvt 
 
 		historique = db.list_mouvements_info(self.user.idUtilisateur)  #Moyen opti :/
 		self.list_historique.insert(tk.END, str(len(historique)) + ' - ' + str(self.data_list_historique[-1].dateCreation) ) 
@@ -243,18 +241,16 @@ class MainWin(tk.Tk, DataServer):
 			self.choix_sauvegarde = messagebox.askquestion(message='Voulez-vous sauvegarder votre enregistrement ?', type='yesno')
 			if self.choix_sauvegarde == messagebox.YES:
 				self.Sauvegarde()
-				enregistrement = db.list_mouvements_info(1) #id 1 pour les pre-enregistrement
-				self.list_pre_enregistrement.insert(tk.END, str(len(enregistrement)) + ' - ' + str(self.data_list_pre_enregistrement[-1].name) )
+				
 
-			
-		if self.choix_sauvegarde == messagebox.YES:
-			self.Sauvegarde()
+		
 
 	def compare_message(self) :
 		'''
 		Affiche l'analyse comparative à partir de la base de donnée
 		'''
-		mvt_exp = db.get_mesure_vect(self.idMvt)
+		idmvt = self.server_event.idMvt
+		mvt_exp = db.get_mesure_vect(idmvt)
 		mvt_the = {}
 		for li in db.list_mouvements_info(1) :
 			id = li[0]
@@ -280,11 +276,18 @@ class MainWin(tk.Tk, DataServer):
 
 	def Sauvegarde(self):
 		self.user.idUtilisateur
-		name = []
-		namewin.NameWin(name)
-		nom = name[0]  #NE MARCHE PAS !!!!!
-		idmvt = self.server_event.idMvt 
-		db.rename_donnees(idmvt,nom)
+
+		def callback(nom):
+			if nom:
+				idmvt = self.server_event.idMvt 
+				db.rename_donnees(idmvt,nom)
+				enregistrement = db.list_mouvements_info(1) #id 1 pour les pre-enregistrement
+				self.list_pre_enregistrement.insert(tk.END, str(len(enregistrement)) + ' - ' + str(enregistrement[-1].name) )
+
+		namewin.NameWin(callback)
+
+
+		
 
 	def get_current_comp(self):
 		if not self.running:
