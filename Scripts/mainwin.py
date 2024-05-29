@@ -254,12 +254,12 @@ class MainWin(tk.Tk, DataServer):
 		'''
 		Affiche l'analyse comparative à partir de la base de donnée
 		'''
-		mvt_exp = db.get_mesure_vect(self.idMvt)
+		mvt_exp = db.get_mesure_vect(self.server_event.idMvt)
 		mvt_the = {}
 		for li in db.list_mouvements_info(1) :
 			id = li[0]
 			name = li[4]
-			mvt_the[name] = db.get_mesure_vect(id) #a continuer
+			mvt_the[name] = db.get_mesure_vect(id) 
 		text = cp.comparaison(data_th, mvt_exp) 
 		self.resultat = messagebox.showinfo(title='Info', message=text)
 
