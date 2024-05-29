@@ -1,7 +1,7 @@
 '''
 Affichage de la Fenêtre Principale
 '''
-import datetime
+import datetime 
 import queue
 import tkinter as tk
 from tkinter import messagebox
@@ -151,8 +151,8 @@ class MainWin(tk.Tk, DataServer):
 		Démarrage de l'enregistrement, création boutons pause et arret
 		"""
 		self.running = True
-
-		idMvt = db.add_movement_data(self.user.idUtilisateur, 1, '1970-01-01 01:01:01', None)
+		now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+		idMvt = db.add_movement_data(self.user.idUtilisateur, 1, now, None)
 		self.server_event.idMvt = idMvt
 		self.server_event.set()
 
@@ -231,16 +231,29 @@ class MainWin(tk.Tk, DataServer):
 
 		#self.compare_message()
 
-		historique = db.list_mouvements_info(self.user.idUtilisateur)  #Moyen opti :/
-		self.list_historique.insert(tk.END, str(len(historique)) + ' - ' + str(self.data_list_historique[-1].dateCreation) ) 
+		self.sauvegarde()		
+
+		
+
+	def sauvegarde(self):
+		"""
+		Mise dans l'historique ou dans l'enregistrement
+		"""
 
 		if not bool(self.user.eleve):
 			self.choix_sauvegarde = messagebox.askquestion(message='Voulez-vous sauvegarder votre enregistrement ?', type='yesno')
 			if self.choix_sauvegarde == messagebox.YES:
-				self.Sauvegarde()
-				
-
+				self.sauvegarde_enregistrement()
+				histo = False
+			else:
+				histo = True
+		else:
+			histo = True
 		
+		if histo:
+			historique = db.list_mouvements_info(self.user.idUtilisateur)  #Moyen opti :/
+			self.list_historique.insert(tk.END, str(len(historique)) + ' - ' + str(historique[-1].dateCreation) ) 
+
 
 	def compare_message(self) :
 		'''
@@ -270,8 +283,7 @@ class MainWin(tk.Tk, DataServer):
 		self.frame_historique.grid_forget()
 		self.frame_pre_enregistrement.grid(column=0,columnspan= 2,row=1,rowspan = 9,sticky='nesw')		
 
-	def Sauvegarde(self):
-		self.user.idUtilisateur
+	def sauvegarde_enregistrement(self):
 
 		def callback(nom):
 			if nom:
@@ -307,5 +319,5 @@ class MainWin(tk.Tk, DataServer):
 		self.after(1000, self.get_current_comp)
 
 if __name__ == "__main__":
-	fen = MainWin(19) #1 admin, #10 test #19 test_teacher #20 test_eleve
+	fen = MainWin(10) #1 admin, #10 test #19 test_teacher #20 test_eleve
 	fen.mainloop()	
