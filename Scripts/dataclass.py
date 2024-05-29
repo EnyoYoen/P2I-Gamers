@@ -54,13 +54,13 @@ class MesureSimple(DataClass):
 
 class MesureVect(DataClass):
 	KEYS = [
-		'idCapteur',
 		'idMesure',
+		'idCapteur',
+		'idMvt',
 		'dateCreation',
 		'X',
 		'Y',
-		'Z',
-		'idMvt'
+		'Z'
 	]
 
 class Capteur(DataClass):
