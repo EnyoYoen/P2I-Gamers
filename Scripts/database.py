@@ -55,7 +55,7 @@ class Database:
 	@MesureVect.cast
 	def get_mesure_vect(self, idMouvement):
 		"""Renvoie la liste de mesures vectorielles correspondant au mouvement idMouvement"""
-		sql = "SELECT * FROM MesuresVect WHERE idMouvement = %s"
+		sql = "SELECT * FROM MesuresVect WHERE idDonneeMouvement = %s"
 		return self.sql(sql, [idMouvement])
 
 	def get_mouvement(self, idMouvement):
