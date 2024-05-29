@@ -259,13 +259,15 @@ class MainWin(tk.Tk, DataServer):
 		'''
 		Affiche l'analyse comparative à partir de la base de donnée
 		'''
+		# à adapter avec l'apprentissage 
 		mvt_exp = db.get_mesure_vect(self.server_event.idMvt)
 		mvt_the = {}
+		name_predict = str(perceptron.predict(mvt_exp)) #ajouter mlp
 		for li in db.list_mouvements_info(1) :
 			id = li.idMvt
 			name = li.name
 			mvt_the[name] = db.get_mesure_vect(id) 
-		text = cp.comparaison_total('a',mvt_the, mvt_exp) # à adapter avec l'apprentissage 
+		text = cp.comparaison_total(name_predict, mvt_the, mvt_exp) 
 		self.resultat = messagebox.showinfo(title='Info', message=text)
 
 
