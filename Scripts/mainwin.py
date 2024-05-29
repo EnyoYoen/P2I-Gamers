@@ -229,11 +229,8 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_start.bind('<Button-1>', self.start)
 		self.bouton_start.grid(row=11, column=0, columnspan=8)
 
-		self.compare_message()
-		# text = cp.comparaison(data_th, mvt_exp) 
-		# self.resultat = messagebox.showinfo(title='Info', message=text)
+		#self.compare_message()
 
-		
 		self.server_event.idMvt 
 
 		historique = db.list_mouvements_info(self.user.idUtilisateur)  #Moyen opti :/
@@ -257,10 +254,10 @@ class MainWin(tk.Tk, DataServer):
 		mvt_exp = db.get_mesure_vect(self.server_event.idMvt)
 		mvt_the = {}
 		for li in db.list_mouvements_info(1) :
-			id = li[0]
-			name = li[4]
+			id = li.idMvt
+			name = li.name
 			mvt_the[name] = db.get_mesure_vect(id) 
-		text = cp.comparaison(data_th, mvt_exp) 
+		text = cp.comparaison_total('a',mvt_the, mvt_exp) # à adapter avec l'apprentissage 
 		self.resultat = messagebox.showinfo(title='Info', message=text)
 
 
