@@ -2,6 +2,7 @@
 Affichage de la Fenêtre Principale
 '''
 import datetime 
+import itertools
 import queue
 import tkinter as tk
 from tkinter import messagebox
@@ -346,14 +347,31 @@ class MainWin(tk.Tk, DataServer):
 			except queue.Empty:
 				break
 
-		data_th = perceptron.predict(data)
+		# nom_th = perceptron.predict(data)
+		mvmt_info, mesures_simple, mesures_vect = db.get_movement_data(self.server_event.idMvt)
 
-		value = cp.comparaison(data_th, data)
+		capteurs = {}
+
+		data_th = {}
+		data_exp = {}
+		for mesure_cat, mesures in [(data_exp, data), (data_th, itertools.chain(mesures_vect, mesures_simple))]
+			for mesure in mesures:
+				idCapteur = mesure.idCapteur
+				if idCapteur not in capteurs:
+					capteur = db.get_capteur(idCapteur)
+					capteurs[idCapteur] = capteur.type
+
+					cat = capteurs[idCapteur]
+					if cat not in data_exp:
+						data_exp[cat] = []
+
+					mesure_cat[cat].append(mesure)
+
+		value = cp.comparaison(data_th, data_exp)
 
 		print(f'{value=}')
 		self.precision_var.set(f'{value=}%')
-		# TODO - Update StringVar
-  
+
 		self.after(1000, self.get_current_comp)
 
 	def matplotlib_integration_comparison_initialisation(self):

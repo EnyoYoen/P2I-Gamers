@@ -43,12 +43,14 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 						simples.append((int(idCapteur)+1, idDonneeMouvement, date, value))
 						mesure = MesureSimple.from_raw((int(idCapteur)+1, date, value, idPaquet, idDonneeMouvement))
 
+						self.que.put(mesure)
+
 				elif packet['type'] == 'vector':
 					for idCapteur, vec in packet['data'].items():
 						vects.append((int(idCapteur)+1, idDonneeMouvement, date, *vec))
 						mesure = MesureVect.from_raw((int(idCapteur)+1, date, *vec, idPaquet, idDonneeMouvement))
 
-				self.que.put(mesure)
+						self.que.put(mesure)
 
 			db.add_mesures_multiples(simples, vects)
 
