@@ -12,6 +12,9 @@ import comparaison as cp
 from server import DataServer
 import namewin
 from tkinter import font
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
+import random
 
 mvt_exp = MesureVect.from_raw_list([(0,0,1,2,3,1),(1,1,4,5,6,2),(2,2,7,8,9,3)])
 data_th = {"aurevoir":MesureVect.from_raw_list([(0,3,10,9,8,1),(0,4,7,6,5,1.5),(0,5,4,3,2,2),(0,6,1,1,1,2.6),(0,7,1,2,3,3)]),
@@ -139,6 +142,8 @@ class MainWin(tk.Tk, DataServer):
 		self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy, fg='#444445', bg='#FFE8DF')
 		self.exit_bouton.bind('<Button-1>',self.quitter)
 		self.exit_bouton.grid(row=14, column=0, columnspan=8)
+
+		self.matplotlib_integration_comparison_initialisation()
 	
 	def quitter(self, event):
 		"""
@@ -174,6 +179,7 @@ class MainWin(tk.Tk, DataServer):
 		
 		self.bouton_start.destroy()
 		self.start_time = datetime.datetime.now()
+		self.matplotlib_integration_comparison_update()
 		self.update_time()
 
 	def update_time(self):
@@ -212,6 +218,7 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_pause.grid(row=11, column=3)
 		
 		self.update_time()
+		self.matplotlib_integration_comparison_update()
 
 	def arret(self, event) :
 		"""
@@ -296,9 +303,6 @@ class MainWin(tk.Tk, DataServer):
 
 		namewin.NameWin(callback)
 
-
-		
-
 	def get_current_comp(self):
 		if not self.running:
 			return
@@ -319,6 +323,28 @@ class MainWin(tk.Tk, DataServer):
 		# TODO - Update StringVar
   
 		self.after(1000, self.get_current_comp)
+
+	def matplotlib_integration_comparison_initialisation(self):
+		
+		self.fig_compa, self.ax_compa = plt.subplots()
+		self.dico_compa = {}
+		self.ax_compa.boxplot(x=(1,1))
+
+		self.canvas_compa = FigureCanvasTkAgg(self.fig_compa, master = self) 
+		self.canvas_compa.draw()
+
+		self.canvas_compa.get_tk_widget().grid(column=8,columnspan=2, row=8, rowspan=2)
+	
+	def matplotlib_integration_comparison_update(self):
+		if self.running == True :
+
+			self.ax_compa.clear()
+			self.ax_compa.boxplot(self.dico_compa)
+			self.fig_compa.canvas.draw()
+			self.after(1000, self.matplotlib_integration_comparison_update)
+
+	def integration_in_right_pace(self, dico:dict):
+		self.dico_compa = dico
 
 if __name__ == "__main__":
 	fen = MainWin(10) #1 admin, #10 test #19 test_teacher #20 test_eleve
