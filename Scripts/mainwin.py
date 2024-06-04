@@ -12,6 +12,15 @@ import comparaison as cp
 from server import DataServer
 import namewin
 from tkinter import font
+import matplotlib.pyplot as plt
+
+import matplotlib
+matplotlib.use("TkAgg")
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+import matplotlib.animation as animation
+from matplotlib import style
+style.use('ggplot')
 
 mvt_exp = MesureVect.from_raw_list([(0,0,1,2,3,1),(1,1,4,5,6,2),(2,2,7,8,9,3)])
 data_th = {"aurevoir":MesureVect.from_raw_list([(0,3,10,9,8,1),(0,4,7,6,5,1.5),(0,5,4,3,2,2),(0,6,1,1,1,2.6),(0,7,1,2,3,3)]),
@@ -30,6 +39,10 @@ class MainWin(tk.Tk, DataServer):
 		screen_height = self.winfo_screenheight() - 100
 
 		self.geometry(f"{screen_width}x{screen_height}")
+
+		self.f = Figure(figsize=(2,2), dpi=100)
+		self.a = self.f.add_subplot(111)
+
 		self.creer_widgets()
 
 	def creer_widgets(self):
@@ -106,7 +119,7 @@ class MainWin(tk.Tk, DataServer):
 		
 		#cadre visualisation
 		self.canevas = tk.Canvas(self, background='lightblue')
-		self.canevas.grid(column=2,columnspan=6,row=1,rowspan= 10, sticky='nesw')
+		self.canevas.grid(column=2,columnspan=4,row=1,rowspan= 10, sticky='nesw')
         
         #ajustement de la taille relative
 		#self.canevas.columnconfigure(1, weight=2)
@@ -116,10 +129,10 @@ class MainWin(tk.Tk, DataServer):
 		self.start_time = 0
 		self.running = False
 		self.chrono = tk.Label(text='00:00:00', fg='#444445')
-		self.chrono.grid(row=13, column=0, columnspan=8)
+		self.chrono.grid(row=13, column=4)
 
 		self.label_enregistrement = tk.Label(text="Commencer l'enregistrement", fg='#444445')
-		self.label_enregistrement.grid(row=12, column=0, columnspan=8)
+		self.label_enregistrement.grid(row=12, column=4)
 		self.precision_var = tk.StringVar()
 		self.label_pourcentage = tk.Label(textvariable=self.precision_var, fg='#444445')
 		self.label_pourcentage.grid(row=12, column=5)
@@ -131,14 +144,36 @@ class MainWin(tk.Tk, DataServer):
 		
 		self.bouton_start = tk.Button(self, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
-		self.bouton_start.grid(row=11, column=0, columnspan=8)
+		self.bouton_start.grid(row=11, column=4)
 		
 		self.bouton_restart = tk.Button(self, image=self.img_start)
+
+		# graphe 
+		self.graph()
+		self.canvas.get_tk_widget().grid(row=1, column=6, rowspan=5, columnspan=2)
 		
 		#Exit button
 		self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy, fg='#444445', bg='#FFE8DF')
 		self.exit_bouton.bind('<Button-1>',self.quitter)
-		self.exit_bouton.grid(row=14, column=0, columnspan=8)
+		self.exit_bouton.grid(row=14, column=4)
+	
+	def animate(self, a):
+		pullData = open('sampleText.txt','r').read()
+		dataArray = pullData.split('\n')
+		xar=[]
+		yar=[]
+		for eachLine in dataArray:
+			if len(eachLine)>1:
+				x,y = eachLine.split(',')
+				xar.append(int(x))
+				yar.append(int(y))
+		self.a.clear()
+		self.a.plot(xar, yar)
+
+	def graph(self):
+		self.canvas = FigureCanvasTkAgg(self.f, self)
+		self.canvas.draw()
+		# plt.show()
 	
 	def quitter(self, event):
 		"""
@@ -322,4 +357,5 @@ class MainWin(tk.Tk, DataServer):
 
 if __name__ == "__main__":
 	fen = MainWin(10) #1 admin, #10 test #19 test_teacher #20 test_eleve
+	anim = animation.FuncAnimation(fen.f, fen.animate, interval=1000, cache_frame_data=False)
 	fen.mainloop()	
