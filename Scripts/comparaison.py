@@ -7,7 +7,8 @@ Created on Tue May 14 08:53:00 2024
 from dataclass import MesureVect,MesureSimple   
 import numpy as np
 from random import randint
-
+import matplotlib.pyplot as plt
+from math import sqrt, acos, asin, atan
 
 def interpolation_vect(mvt_exp, mvt_th):
     inter = []
@@ -21,7 +22,7 @@ def interpolation_vect(mvt_exp, mvt_th):
         # print(t1)
         # print(t1_th)
         if t1_th == t1:
-            inter.append(MesureVect.from_raw((0,0,t1,x1,y1,z1)))
+            inter.append(MesureVect.from_raw((0,0,0,t1,x1,y1,z1)))
             # print(f"valeur gardée : {(0,0,t1,x1,y1,z1)}")
             j += 1
         else:
@@ -34,11 +35,11 @@ def interpolation_vect(mvt_exp, mvt_th):
                 x = (x1 + x2)/2
                 y = (y1 + y2)/2
                 z = (z1 + z2)/2
-                inter.append(MesureVect.from_raw((0,0,t,x,y,z)))
+                inter.append(MesureVect.from_raw((0,0,0,t,x,y,z)))
                 j += 1
                 t1_th = mvt_th[j].dateCreation
                 # print(f"valeur ajoutée : {(0,0,t,x,y,z)}")
-            inter.append(MesureVect.from_raw((0,0,t1_th,x1,y1,z1)))
+            inter.append(MesureVect.from_raw((0,0,0,t1_th,x1,y1,z1)))
             # print(f"valeur gardée : {(0,0,t1_th,v)}")
             j += 1        
     inter.sort(key=lambda e: e.dateCreation)
@@ -94,7 +95,7 @@ def interpolation_simple(mvt_exp, mvt_th):
 def comparaison_direct(nom, dico_total, dico_exp):  
     data = ['pression', 'flexion', 'positions']
     dico_th = dico_total[nom]
-    reponse = f'Le geste {nom} a été effectué avec :'
+    taux = 100
     for type in data:
         mvt_exp = dico_exp[type]
         err_i = 100
@@ -131,16 +132,10 @@ def comparaison_direct(nom, dico_total, dico_exp):
                     if err_f < err_i:
                         err_i = err_f
                     else:
-                        text = "trop d'erreurs."
-                        reponse += text
-                        return reponse
-                else:
-                    text = "Aucun mouvmement enregistré, recommencer."
-                    reponse += text
-                    return reponse
+                        return taux
                 resultat = 100-err_i
                 resultat = round(resultat, 2)
-                text = f' {resultat}% de réussite en {type}'  
+                taux = resultat
             else:
                 mvt_exp_inter = interpolation_simple(mvt_exp, mvt_th_compare)
                 mvt_exp = mvt_exp_inter
@@ -154,22 +149,18 @@ def comparaison_direct(nom, dico_total, dico_exp):
                     if err_f < err_i:
                         err_i = err_f
                     else:
-                        text = "trop d'erreurs"
-                        return reponse
-                else:
-                    text = "Aucun mouvement enregistré, recommencer."
-                    reponse += text
-                    return reponse
+                        return taux
                 resultat = 100-err_i
                 resultat = round(resultat, 2)
                 text = f' {resultat}% de réussite en {type},'
-        reponse += text
-    return reponse +'.'
+        taux = resultat
+    return taux
 
 def comparaison_total(nom, dico_total, dico_exp):
     data = ['pression', 'flexion', 'positions']
     dico_th = dico_total[nom]
     reponse = f'Le geste {nom} a été effectué avec :'
+    box ={}
     for type in data:
         mvt_exp = dico_exp[type]
         err_i = 100
@@ -182,9 +173,14 @@ def comparaison_total(nom, dico_total, dico_exp):
         for row in mvt_exp:
             t = round(row.dateCreation/r)
             row.dateCreation = t               
+        
         if type == 'positions':
             mvt_exp_inter = interpolation_vect(mvt_exp, mvt_th)
             mvt_exp = mvt_exp_inter
+            err_teta = []
+            box["teta"] = err_teta
+            err_phi = []
+            box["phi"] = err_phi
             if mvt_exp != 0 :  
                 for i in range(len(mvt_exp)):
                     x1 = mvt_th[i].X
@@ -193,12 +189,25 @@ def comparaison_total(nom, dico_total, dico_exp):
                     x2 = mvt_exp[i].X
                     y2 = mvt_exp[i].Y
                     z2 = mvt_exp[i].Z
+
+                    r2 = sqrt((x2**2)+(y2**2)+(z2**2))
+                    teta2 = acos(z2/r2)
+                    phi2 = atan(y2/x2)
+                    r1 = sqrt((x1**2)+(y1**2)+(z1**2))
+                    teta1 = acos(z1/r1)
+                    phi1 = atan(y1/x1)
+                    err_t = 100*abs(teta1-teta2)/teta1
+                    err_p = 100*abs(phi1-phi2)/phi1
+                    err_teta.append(err_t)
+                    err_phi.append(err_p)
+
                     err_x = 100*abs(x1-x2)/x1
                     err_y = 100*abs(y1-y2)/y1
                     err_z = 100*abs(z1-z2)/z1
                     moy = (err_x + err_y + err_z)/3
                     res.append(moy)  
                 err_f = np.mean(res)
+                
                 if err_f < err_i:
                     err_i = err_f
                 else:
@@ -208,14 +217,19 @@ def comparaison_total(nom, dico_total, dico_exp):
             resultat = 100-err_i
             resultat = round(resultat, 2)
             text = f' {resultat}% de réussite en {type}'  
-        else:
+            reponse += text
+        
+        elif type == 'pression':
             mvt_exp_inter = interpolation_simple(mvt_exp, mvt_th)
             mvt_exp = mvt_exp_inter
+            err_pression = []
+            box["pression"] = err_pression
             if mvt_exp_inter != 0 :   
                 for i in range(len(mvt_exp)):
                     v1 = mvt_th[i].valeur    
                     v2 = mvt_exp[i].valeur
                     err = 100*abs(v1-v2)
+                    err_pression.append(err)
                     res.append(err)   
                 err_f = np.mean(res) 
                 if err_f < err_i:
@@ -229,14 +243,39 @@ def comparaison_total(nom, dico_total, dico_exp):
             resultat = 100-err_i
             resultat = round(resultat, 2)
             text = f' {resultat}% de réussite en {type},'
-        reponse += text
-    return reponse +'.'
+            reponse += text 
+        else:
+            mvt_exp_inter = interpolation_simple(mvt_exp, mvt_th)
+            mvt_exp = mvt_exp_inter
+            err_flexion = []
+            box["flexion"] = err_flexion
+            if mvt_exp_inter != 0 :   
+                for i in range(len(mvt_exp)):
+                    v1 = mvt_th[i].valeur    
+                    v2 = mvt_exp[i].valeur
+                    err = 100*abs(v1-v2)
+                    err_flexion.append(err)
+                    res.append(err)   
+                err_f = np.mean(res) 
+                if err_f < err_i:
+                    err_i = err_f
+                else:
+                    text = "trop d'erreurs, recommencer."
+            else:
+                text = "Aucun mouvement enregistré, recommencer."
+                reponse += text
+                return reponse
+            resultat = 100-err_i
+            resultat = round(resultat, 2)
+            text = f' {resultat}% de réussite en {type},'
+            reponse += text
+    return reponse +'.',box
 
 
 if __name__ == "__main__":
     mvt_exp = {'pression': MesureSimple.from_raw_list([(0,0,10,0),(0,0,13,0),(0,0,15,0)]),
                'flexion': MesureSimple.from_raw_list([(0,0,10,4),(0,0,13,5),(0,0,15,5)]), 
-               'positions': MesureVect.from_raw_list([(0,0,10,9,8,4),(0,0,13,3,2,3),(0,0,15,10,8,1)])}
+               'positions': MesureVect.from_raw_list([(0,0,0,10,9,8,4),(0,0,0,13,3,2,3),(0,0,0,15,10,8,1)])}
 
     mvt_exp2 = {'pression' : MesureSimple.from_raw_list([(0, 0, 0, 0),(0, 0, 1, 0), (0, 0, 2, 0), (0, 0, 3, 0), (0, 0, 4, 0),
                                         (0, 0, 5, 1), (0, 0, 6, 1), (0, 0, 7, 0), (0, 0, 8, 1), (0, 0, 9, 0), (0, 0, 10, 0), 
@@ -244,11 +283,11 @@ if __name__ == "__main__":
                     'flexion': MesureSimple.from_raw_list([(0, 0, 0, 0),(0, 0, 1, 4), (0, 0, 2, 2), (0, 0, 3, 4), (0, 0, 4, 2), (0, 0, 5, 3), 
                                         (0, 0, 6, 2), (0, 0, 7, 3), (0, 0, 8, 4), (0, 0, 9, 3), (0, 0, 10, 4), (0, 0, 11, 4), 
                                         (0, 0, 12, 5), (0, 0, 13, 5), (0, 0, 14, 3), (0, 0, 15, 5), (0, 0, 16, 3)]),
-                    'positions': MesureVect.from_raw_list([(0, 0, 0, 3, 9, 9), (0, 0, 1, 3, 9, 9), (0, 0, 2, 4, 6, 8), 
-                                        (0, 0, 3, 10, 1, 4), (0, 0, 4, 5, 5, 7), (0, 0, 5, 7, 6, 10), (0, 0, 6, 8, 2, 5), 
-                                        (0, 0, 7, 6, 4, 4), (0, 0, 8, 2, 3, 2), (0, 0, 9, 10, 2, 9), (0, 0, 10, 9, 8, 4), 
-                                        (0, 0, 11, 2, 9, 1), (0, 0, 12, 10, 4, 4), (0, 0, 13, 3, 2, 3), (0, 0, 14, 9, 1, 5), 
-                                        (0, 0, 15, 10, 8, 1),(0, 0, 16, 4, 8, 1)])}
+                    'positions': MesureVect.from_raw_list([(0, 0, 0, 0, 3, 9, 9), (0, 0, 0, 1, 3, 9, 9), (0, 0, 0, 2, 4, 6, 8), 
+                                        (0,0, 0, 3, 10, 1, 4), (0,0, 0, 4, 5, 5, 7), (0,0, 0, 5, 7, 6, 10), (0,0, 0, 6, 8, 2, 5), 
+                                        (0,0, 0, 7, 6, 4, 4), (0,0, 0, 8, 2, 3, 2), (0,0, 0, 9, 10, 2, 9), (0,0, 0, 10, 9, 8, 4), 
+                                        (0,0, 0, 11, 2, 9, 1), (0,0, 0, 12, 10, 4, 4), (0,0, 0, 13, 3, 2, 3), (0,0, 0, 14, 9, 1, 5), 
+                                        (0,0, 0, 15, 10, 8, 1),(0,0, 0, 16, 4, 8, 1)])}
     
     data_th = {"aurevoir":{},
              "coucou":{'pression' : MesureSimple.from_raw_list([(0, 0, 0, 0),(0, 0, 1, 0), (0, 0, 2, 0), (0, 0, 3, 0), (0, 0, 4, 0),
@@ -257,15 +296,17 @@ if __name__ == "__main__":
                     'flexion': MesureSimple.from_raw_list([(0, 0, 0, 0),(0, 0, 1, 4), (0, 0, 2, 2), (0, 0, 3, 4), (0, 0, 4, 2), (0, 0, 5, 3), 
                                         (0, 0, 6, 2), (0, 0, 7, 3), (0, 0, 8, 4), (0, 0, 9, 3), (0, 0, 10, 4), (0, 0, 11, 4), 
                                         (0, 0, 12, 5), (0, 0, 13, 5), (0, 0, 14, 3), (0, 0, 15, 5), (0, 0, 16, 3)]),
-                    'positions': MesureVect.from_raw_list([(0, 0, 0, 3, 9, 9), (0, 0, 1, 3, 9, 9), (0, 0, 2, 4, 6, 8), 
-                                        (0, 0, 3, 10, 1, 4), (0, 0, 4, 5, 5, 7), (0, 0, 5, 7, 6, 10), (0, 0, 6, 8, 2, 5), 
-                                        (0, 0, 7, 6, 4, 4), (0, 0, 8, 2, 3, 2), (0, 0, 9, 10, 2, 9), (0, 0, 10, 9, 8, 4), 
-                                        (0, 0, 11, 2, 9, 1), (0, 0, 12, 10, 4, 4), (0, 0, 13, 3, 2, 3), (0, 0, 14, 9, 1, 5), 
-                                        (0, 0, 15, 10, 8, 1),(0, 0, 16, 4, 8, 1)])}}
+                    'positions': MesureVect.from_raw_list([(0,0, 0, 0, 3, 9, 9), (0,0, 0, 1, 3, 9, 9), (0,0, 0, 2, 4, 6, 8), 
+                                        (0,0, 0, 3, 10, 1, 4), (0,0, 0, 4, 5, 5, 7), (0,0, 0, 5, 7, 6, 10), (0,0, 0, 6, 8, 2, 5), 
+                                        (0,0, 0, 7, 6, 4, 4), (0,0, 0, 8, 2, 3, 2), (0,0, 0, 9, 10, 2, 9), (0,0, 0, 10, 9, 8, 4), 
+                                        (0,0, 0, 11, 2, 9, 1), (0,0, 0, 12, 10, 4, 4), (0,0, 0, 13, 3, 2, 3), (0,0, 0, 14, 9, 1, 5), 
+                                        (0,0, 0, 15, 10, 8, 1),(0,0, 0, 16, 4, 8, 1)])}}
     
     # test :
-    texte = comparaison_direct("coucou",data_th, mvt_exp)   
+    taux = comparaison_direct("coucou",data_th, mvt_exp)   
+    print(taux)
+    texte, box = comparaison_total("coucou",data_th, mvt_exp2)   
     print(texte)
-    texte2 = comparaison_total("coucou",data_th, mvt_exp2)   
-    print(texte2)
-    
+    print(box)
+    my_dict = box
+    plt.boxplot(my_dict.values(), labels=my_dict.keys())
