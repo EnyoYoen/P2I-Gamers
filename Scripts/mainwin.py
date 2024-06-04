@@ -118,7 +118,7 @@ class MainWin(tk.Tk, DataServer):
 		
 		#cadre visualisation
 		self.canevas = tk.Canvas(self, background='lightblue')
-		self.canevas.grid(column=2,columnspan=4,row=1,rowspan= 10, sticky='nesw')
+		self.canevas.grid(column=2,columnspan=5,row=1,rowspan= 10, sticky='nesw')
         
         #ajustement de la taille relative
 		#self.canevas.columnconfigure(1, weight=2)
@@ -149,7 +149,7 @@ class MainWin(tk.Tk, DataServer):
 
 		# graphe 
 		self.graph()
-		self.canvas.get_tk_widget().grid(row=1, column=6, rowspan=5, columnspan=2)
+		self.canvas.get_tk_widget().grid(row=1, column=7, rowspan=5, columnspan=1, sticky='nesw')
 		
 		#Exit button
 		self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy, fg='#444445', bg='#FFE8DF')
@@ -365,7 +365,7 @@ class MainWin(tk.Tk, DataServer):
 		self.canvas_compa = FigureCanvasTkAgg(self.fig_compa, master = self) 
 		self.canvas_compa.draw()
 
-		self.canvas_compa.get_tk_widget().grid(row=6, column=6, rowspan=5, columnspan=2)
+		self.canvas_compa.get_tk_widget().grid(row=6, column=7, rowspan=5, columnspan=1, sticky='nesw')
 	
 	def matplotlib_integration_comparison_update(self):
 		if self.running == True :
