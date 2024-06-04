@@ -4,6 +4,8 @@ import json
 import queue
 import threading
 import time
+
+import requests
 from database import db
 from dataclass import MesureSimple, MesureVect
 
@@ -31,19 +33,6 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 			start = time.time()
 			idPaquet = 1
 			idDonneeMouvement = self.event.idMvt
-			if False:
-				for packet in post_body:
-					date = packet['time']
-
-					if packet['type'] == 'simple':
-						for idCapteur, value in packet['data'].items():
-							db.add_mesure_simple(int(idCapteur)+1, idPaquet, idDonneeMouvement, date, value, save=False)
-
-					elif packet['type'] == 'vector':
-						for idCapteur, vec in packet['data'].items():
-							db.add_mesure_vect(int(idCapteur)+1, idPaquet, idDonneeMouvement, date, *vec, save=False)
-
-				db.save()
 
 			simples, vects = [], []
 			for packet in post_body:
@@ -51,15 +40,17 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 
 				if packet['type'] == 'simple':
 					for idCapteur, value in packet['data'].items():
-						simples.append((int(idCapteur)+1, idPaquet, idDonneeMouvement, date, value))
+						simples.append((int(idCapteur)+1, idDonneeMouvement, date, value))
 						mesure = MesureSimple.from_raw((int(idCapteur)+1, date, value, idPaquet, idDonneeMouvement))
+
+						self.que.put(mesure)
 
 				elif packet['type'] == 'vector':
 					for idCapteur, vec in packet['data'].items():
-						vects.append((int(idCapteur)+1, idPaquet, idDonneeMouvement, date, *vec))
+						vects.append((int(idCapteur)+1, idDonneeMouvement, date, *vec))
 						mesure = MesureVect.from_raw((int(idCapteur)+1, date, *vec, idPaquet, idDonneeMouvement))
 
-				self.que.put(mesure)
+						self.que.put(mesure)
 
 			db.add_mesures_multiples(simples, vects)
 
@@ -69,6 +60,14 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 		self.end_headers()
 		self.wfile.write(b'Ok')
 		# self.wfile.write(b'Hello, World!')
+
+	def send_data(self, packet, thread=False):
+		if not thread:
+			threading.Thread(target=self.send_data, args=(packet, True)).start()
+			return
+
+		URL = 'http://localhost:13579'
+		requests.post(URL, data=json.dumps(packet))
 
 def run_custom_server(event, que):
 	server_address = ('', 8085)  # Use a custom port if needed
