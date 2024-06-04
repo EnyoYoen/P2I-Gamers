@@ -13,11 +13,10 @@ import comparaison as cp
 from server import DataServer
 import namewin
 from tkinter import font
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
-
 import matplotlib
 matplotlib.use("TkAgg")
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import matplotlib.animation as animation
 from matplotlib import style
@@ -156,6 +155,9 @@ class MainWin(tk.Tk, DataServer):
 		#Exit button
 		self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy, fg='#444445', bg='#FFE8DF')
 		self.exit_bouton.bind('<Button-1>',self.quitter)
+		self.exit_bouton.grid(row=14, column=0, columnspan=8)
+
+		self.matplotlib_integration_comparison_initialisation()
 		self.exit_bouton.grid(row=14, column=4)
 	
 	def animate(self, a):
@@ -210,6 +212,7 @@ class MainWin(tk.Tk, DataServer):
 		
 		self.bouton_start.destroy()
 		self.start_time = datetime.datetime.now()
+		self.matplotlib_integration_comparison_update()
 		self.update_time()
 
 	def update_time(self):
@@ -248,6 +251,7 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_pause.grid(row=11, column=3)
 		
 		self.update_time()
+		self.matplotlib_integration_comparison_update()
 
 	def arret(self, event) :
 		"""
@@ -332,9 +336,6 @@ class MainWin(tk.Tk, DataServer):
 
 		namewin.NameWin(callback)
 
-
-		
-
 	def get_current_comp(self):
 		if not self.running:
 			return
@@ -372,6 +373,28 @@ class MainWin(tk.Tk, DataServer):
 		self.precision_var.set(f'{value=}%')
 
 		self.after(1000, self.get_current_comp)
+
+	def matplotlib_integration_comparison_initialisation(self):
+		
+		self.fig_compa, self.ax_compa = plt.subplots()
+		self.dico_compa = {}
+		self.ax_compa.boxplot(x=(1,1))
+
+		self.canvas_compa = FigureCanvasTkAgg(self.fig_compa, master = self) 
+		self.canvas_compa.draw()
+
+		self.canvas_compa.get_tk_widget().grid(row=6, column=6, rowspan=5, columnspan=2)
+	
+	def matplotlib_integration_comparison_update(self):
+		if self.running == True :
+
+			self.ax_compa.clear()
+			self.ax_compa.boxplot(self.dico_compa)
+			self.fig_compa.canvas.draw()
+			self.after(1000, self.matplotlib_integration_comparison_update)
+
+	def integration_in_right_pace(self, dico:dict):
+		self.dico_compa = dico
 
 if __name__ == "__main__":
 	fen = MainWin(10) #1 admin, #10 test #19 test_teacher #20 test_eleve
