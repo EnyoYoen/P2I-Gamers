@@ -66,17 +66,13 @@ class MesureVect(DataClass):
 class Capteur(DataClass):
 	KEYS = [
 		'idCapteur',
-		'type',
-		'nom',
-		'fabricant',
+		'idPLacement',
+		'idDispositif',
 		'date_installation',
 		'date_desinstallation'
-	]
- 
-class Paquet(DataClass):
-	KEYS = [
-		'idPaquet',
-		'taille'
+		'nom',
+		'fabricant',
+		'type',
 	]
 
 class Utilisateur(DataClass):

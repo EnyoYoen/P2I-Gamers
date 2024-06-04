@@ -84,7 +84,7 @@ class Database:
 	@Capteur.cast_single
 	def get_capteur(self, idCapteur):
 		"""Renvoie le capteur correspondant à idCapteur"""
-		sql = "SELECT * FROM Capteurs WHERE idCapteur=%s"
+		sql = "SELECT c.*, tc.nomCapteur, tc.fabricant, tc.TypeCapteur FROM Capteurs c, TypeCapteur tc WHERE idCapteur=%s and c.idPlacement=tc.idPlacement"
 		return self.sql(sql, [idCapteur])[0]
 
 	@Utilisateur.cast
