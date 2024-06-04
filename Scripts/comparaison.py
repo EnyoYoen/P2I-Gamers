@@ -92,9 +92,9 @@ def interpolation_simple(mvt_exp, mvt_th):
 #         drv.append((0,0,dt,dx,dy,dz))
 #     return drv
 
-def comparaison_direct(nom, dico_total, dico_exp):  
-    data = ['pression', 'flexion', 'positions']
-    dico_th = dico_total[nom]
+def comparaison_direct(dico_th, dico_exp):  
+    data = ['FlexiForce', 'Flexion', 'Centrale inertielle']
+    # dico_th = dico_total[nom]
     taux = 100
     for type in data:
         mvt_exp = dico_exp[type]
@@ -112,7 +112,7 @@ def comparaison_direct(nom, dico_total, dico_exp):
             while ti <= mvt_th[i].dateCreation <= tf:
                 mvt_th_compare.append(mvt_th[i])
                 i += 1
-            if type == 'positions':
+            if type == 'Centrale inertielle':
                 mvt_exp_inter = interpolation_vect(mvt_exp, mvt_th_compare)
                 mvt_exp = mvt_exp_inter
                 if mvt_exp != 0 :  
@@ -152,14 +152,12 @@ def comparaison_direct(nom, dico_total, dico_exp):
                         return taux
                 resultat = 100-err_i
                 resultat = round(resultat, 2)
-                text = f' {resultat}% de réussite en {type},'
         taux = resultat
     return taux
 
-def comparaison_total(nom, dico_total, dico_exp):
-    data = ['pression', 'flexion', 'positions']
-    dico_th = dico_total[nom]
-    reponse = f'Le geste {nom} a été effectué avec :'
+def comparaison_total(dico_th, dico_exp):
+    data = ['FlexiForce', 'Flexion', 'Centrale inertielle']
+    reponse = f'Le geste a été effectué avec :'
     box ={}
     for type in data:
         mvt_exp = dico_exp[type]
@@ -174,7 +172,7 @@ def comparaison_total(nom, dico_total, dico_exp):
             t = round(row.dateCreation/r)
             row.dateCreation = t               
         
-        if type == 'positions':
+        if type == 'Centrale inertielle':
             mvt_exp_inter = interpolation_vect(mvt_exp, mvt_th)
             mvt_exp = mvt_exp_inter
             err_teta = []
@@ -216,10 +214,10 @@ def comparaison_total(nom, dico_total, dico_exp):
                     return reponse
             resultat = 100-err_i
             resultat = round(resultat, 2)
-            text = f' {resultat}% de réussite en {type}'  
+            text = f' {resultat}% de réussite en position'  
             reponse += text
         
-        elif type == 'pression':
+        elif type == 'FlexiForce':
             mvt_exp_inter = interpolation_simple(mvt_exp, mvt_th)
             mvt_exp = mvt_exp_inter
             err_pression = []
@@ -242,7 +240,7 @@ def comparaison_total(nom, dico_total, dico_exp):
                 return reponse
             resultat = 100-err_i
             resultat = round(resultat, 2)
-            text = f' {resultat}% de réussite en {type},'
+            text = f' {resultat}% de réussite en pression,'
             reponse += text 
         else:
             mvt_exp_inter = interpolation_simple(mvt_exp, mvt_th)
@@ -267,45 +265,44 @@ def comparaison_total(nom, dico_total, dico_exp):
                 return reponse
             resultat = 100-err_i
             resultat = round(resultat, 2)
-            text = f' {resultat}% de réussite en {type},'
+            text = f' {resultat}% de réussite en flexion,'
             reponse += text
     return reponse +'.',box
 
 
 if __name__ == "__main__":
-    mvt_exp = {'pression': MesureSimple.from_raw_list([(0,0,10,0),(0,0,13,0),(0,0,15,0)]),
-               'flexion': MesureSimple.from_raw_list([(0,0,10,4),(0,0,13,5),(0,0,15,5)]), 
-               'positions': MesureVect.from_raw_list([(0,0,0,10,9,8,4),(0,0,0,13,3,2,3),(0,0,0,15,10,8,1)])}
+    mvt_exp = {'FlexiForce': MesureSimple.from_raw_list([(0,0,10,0),(0,0,13,0),(0,0,15,0)]),
+               'Flexion': MesureSimple.from_raw_list([(0,0,10,4),(0,0,13,5),(0,0,15,5)]), 
+               'Centrale inertielle': MesureVect.from_raw_list([(0,0,0,10,9,8,4),(0,0,0,13,3,2,3),(0,0,0,15,10,8,1)])}
 
-    mvt_exp2 = {'pression' : MesureSimple.from_raw_list([(0, 0, 0, 0),(0, 0, 1, 0), (0, 0, 2, 0), (0, 0, 3, 0), (0, 0, 4, 0),
+    mvt_exp2 = {'FlexiForce' : MesureSimple.from_raw_list([(0, 0, 0, 0),(0, 0, 1, 0), (0, 0, 2, 0), (0, 0, 3, 0), (0, 0, 4, 0),
                                         (0, 0, 5, 1), (0, 0, 6, 1), (0, 0, 7, 0), (0, 0, 8, 1), (0, 0, 9, 0), (0, 0, 10, 0), 
                                         (0, 0, 11, 0), (0, 0, 12, 1), (0, 0, 13, 0), (0, 0, 14, 0), (0, 0, 15, 0), (0, 0, 16, 0)]),
-                    'flexion': MesureSimple.from_raw_list([(0, 0, 0, 0),(0, 0, 1, 4), (0, 0, 2, 2), (0, 0, 3, 4), (0, 0, 4, 2), (0, 0, 5, 3), 
+                    'Flexion': MesureSimple.from_raw_list([(0, 0, 0, 0),(0, 0, 1, 4), (0, 0, 2, 2), (0, 0, 3, 4), (0, 0, 4, 2), (0, 0, 5, 3), 
                                         (0, 0, 6, 2), (0, 0, 7, 3), (0, 0, 8, 4), (0, 0, 9, 3), (0, 0, 10, 4), (0, 0, 11, 4), 
                                         (0, 0, 12, 5), (0, 0, 13, 5), (0, 0, 14, 3), (0, 0, 15, 5), (0, 0, 16, 3)]),
-                    'positions': MesureVect.from_raw_list([(0, 0, 0, 0, 3, 9, 9), (0, 0, 0, 1, 3, 9, 9), (0, 0, 0, 2, 4, 6, 8), 
+                    'Centrale inertielle': MesureVect.from_raw_list([(0, 0, 0, 0, 3, 9, 9), (0, 0, 0, 1, 3, 9, 9), (0, 0, 0, 2, 4, 6, 8), 
                                         (0,0, 0, 3, 10, 1, 4), (0,0, 0, 4, 5, 5, 7), (0,0, 0, 5, 7, 6, 10), (0,0, 0, 6, 8, 2, 5), 
                                         (0,0, 0, 7, 6, 4, 4), (0,0, 0, 8, 2, 3, 2), (0,0, 0, 9, 10, 2, 9), (0,0, 0, 10, 9, 8, 4), 
                                         (0,0, 0, 11, 2, 9, 1), (0,0, 0, 12, 10, 4, 4), (0,0, 0, 13, 3, 2, 3), (0,0, 0, 14, 9, 1, 5), 
                                         (0,0, 0, 15, 10, 8, 1),(0,0, 0, 16, 4, 8, 1)])}
     
-    data_th = {"aurevoir":{},
-             "coucou":{'pression' : MesureSimple.from_raw_list([(0, 0, 0, 0),(0, 0, 1, 0), (0, 0, 2, 0), (0, 0, 3, 0), (0, 0, 4, 0),
+    data_th = {'FlexiForce' : MesureSimple.from_raw_list([(0, 0, 0, 0),(0, 0, 1, 0), (0, 0, 2, 0), (0, 0, 3, 0), (0, 0, 4, 0),
                                         (0, 0, 5, 1), (0, 0, 6, 1), (0, 0, 7, 0), (0, 0, 8, 1), (0, 0, 9, 0), (0, 0, 10, 0), 
                                         (0, 0, 11, 0), (0, 0, 12, 1), (0, 0, 13, 0), (0, 0, 14, 0), (0, 0, 15, 0), (0, 0, 16, 0)]),
-                    'flexion': MesureSimple.from_raw_list([(0, 0, 0, 0),(0, 0, 1, 4), (0, 0, 2, 2), (0, 0, 3, 4), (0, 0, 4, 2), (0, 0, 5, 3), 
+                    'Flexion': MesureSimple.from_raw_list([(0, 0, 0, 0),(0, 0, 1, 4), (0, 0, 2, 2), (0, 0, 3, 4), (0, 0, 4, 2), (0, 0, 5, 3), 
                                         (0, 0, 6, 2), (0, 0, 7, 3), (0, 0, 8, 4), (0, 0, 9, 3), (0, 0, 10, 4), (0, 0, 11, 4), 
                                         (0, 0, 12, 5), (0, 0, 13, 5), (0, 0, 14, 3), (0, 0, 15, 5), (0, 0, 16, 3)]),
-                    'positions': MesureVect.from_raw_list([(0,0, 0, 0, 3, 9, 9), (0,0, 0, 1, 3, 9, 9), (0,0, 0, 2, 4, 6, 8), 
+                    'Centrale inertielle': MesureVect.from_raw_list([(0,0, 0, 0, 3, 9, 9), (0,0, 0, 1, 3, 9, 9), (0,0, 0, 2, 4, 6, 8), 
                                         (0,0, 0, 3, 10, 1, 4), (0,0, 0, 4, 5, 5, 7), (0,0, 0, 5, 7, 6, 10), (0,0, 0, 6, 8, 2, 5), 
                                         (0,0, 0, 7, 6, 4, 4), (0,0, 0, 8, 2, 3, 2), (0,0, 0, 9, 10, 2, 9), (0,0, 0, 10, 9, 8, 4), 
                                         (0,0, 0, 11, 2, 9, 1), (0,0, 0, 12, 10, 4, 4), (0,0, 0, 13, 3, 2, 3), (0,0, 0, 14, 9, 1, 5), 
-                                        (0,0, 0, 15, 10, 8, 1),(0,0, 0, 16, 4, 8, 1)])}}
+                                        (0,0, 0, 15, 10, 8, 1),(0,0, 0, 16, 4, 8, 1)])}
     
     # test :
-    taux = comparaison_direct("coucou",data_th, mvt_exp)   
+    taux = comparaison_direct(data_th, mvt_exp)   
     print(taux)
-    texte, box = comparaison_total("coucou",data_th, mvt_exp2)   
+    texte, box = comparaison_total(data_th, mvt_exp2)   
     print(texte)
     print(box)
     my_dict = box
