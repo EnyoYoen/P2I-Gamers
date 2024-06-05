@@ -61,6 +61,7 @@ class MainWin(tk.Tk, DataServer):
 		self.columnconfigure(0, weight=0)
 		self.columnconfigure(1, weight=0)
 		self.label.grid(row=0, column=0, columnspan=8)
+		self.is_comparaison = True
 
 		#Frame historique
 		self.frame_historique = tk.Frame(self)
@@ -152,14 +153,32 @@ class MainWin(tk.Tk, DataServer):
 		self.graph()
 		self.canvas.get_tk_widget().grid(row=1, column=7, rowspan=5, columnspan=1, sticky='nesw')
 		
+		#Button 
+		self.bouton_desac_compa = tk.Button(self, text='Désactiver comparaison')
+		self.bouton_desac_compa.bind('<Button-1>', self.off_compa)
+		self.bouton_desac_compa.grid(row=11, column=7)
+
+		self.bouton_act_compa = tk.Button(self, text='Activer comparaison')
+		self.bouton_act_compa.bind('<Button-1>', self.on_compa)
+
 		#Exit button
 		self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy, fg='#444445', bg='#FFE8DF')
 		self.exit_bouton.bind('<Button-1>',self.quitter)
-		self.exit_bouton.grid(row=14, column=0, columnspan=8)
+		self.exit_bouton.grid(row=14, column=5)
 
 		self.matplotlib_integration_comparison_initialisation()
-		self.exit_bouton.grid(row=14, column=4)
+
 	
+	def off_compa(self, event):
+		self.is_comparaison = False
+		self.bouton_desac_compa.grid_forget()
+		self.bouton_act_compa.grid(row=11, column=7)
+
+	def on_compa(self, event):
+		self.is_comparaison = True
+		self.bouton_act_compa.grid_forget()
+		self.bouton_desac_compa.grid(row=11, column=7)
+
 	def animate(self, a):
 		pullData = open('sampleText.txt','r').read()
 		dataArray = pullData.split('\n')
@@ -193,7 +212,7 @@ class MainWin(tk.Tk, DataServer):
 		idMvt = db.add_movement_data(self.user.idUtilisateur, 1, now, None)
 		self.server_event.idMvt = idMvt
 		self.server_event.set()
-
+		
 		self.get_current_comp()
 
 		while True: # Clear the queue
@@ -267,7 +286,8 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_pause.destroy()
 		self.bouton_start = tk.Button(self, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
-		self.bouton_start.grid(row=11, column=0, columnspan=8)
+		self.bouton_start.grid(row=11, column=4)
+		
 
 		#self.compare_message()
 
@@ -339,40 +359,42 @@ class MainWin(tk.Tk, DataServer):
 	def get_current_comp(self):
 		if not self.running:
 			return
-		data = []
+		self.after(1000, self.get_current_comp)
+		if self.is_comparaison:
+			data = []
+			
+			while True: # Get all data from queue
+				try:
+					data.append(self.dataQueue.get_nowait())
+				except queue.Empty:
+					break
+
+			nom_th = perceptron.predict(data)
+			mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(self.server_event.idMvt)
+
+			capteurs = {}
+
+			data_th = {}
+			data_exp = {}
+			for mesure_cat, mesures in [(data_exp, data), (data_th, itertools.chain(mesures_vect, mesures_simple))]:
+				for mesure in mesures:
+					idCapteur = mesure.idCapteur
+					if idCapteur not in capteurs:
+						capteur = db.get_capteur(idCapteur)
+						capteurs[idCapteur] = capteur.type
+
+						cat = capteurs[idCapteur]
+						if cat not in data_exp:
+							data_exp[cat] = []
+
+						mesure_cat[cat].append(mesure)
+
+			value = cp.comparaison(data_th, data_exp)
+
+			print(f'{value=}')
+			self.precision_var.set(f'{value=}%')
+
 		
-		while True: # Get all data from queue
-			try:
-				data.append(self.dataQueue.get_nowait())
-			except queue.Empty:
-				break
-
-		# nom_th = perceptron.predict(data)
-		mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(self.server_event.idMvt)
-
-		capteurs = {}
-
-		data_th = {}
-		data_exp = {}
-		for mesure_cat, mesures in [(data_exp, data), (data_th, itertools.chain(mesures_vect, mesures_simple))]:
-			for mesure in mesures:
-				idCapteur = mesure.idCapteur
-				if idCapteur not in capteurs:
-					capteur = db.get_capteur(idCapteur)
-					capteurs[idCapteur] = capteur.type
-
-					cat = capteurs[idCapteur]
-					if cat not in data_exp:
-						data_exp[cat] = []
-
-					mesure_cat[cat].append(mesure)
-
-		# value = cp.comparaison(data_th, data_exp)
-
-		# print(f'{value=}')
-		# self.precision_var.set(f'{value=}%')
-
-		# self.after(1000, self.get_current_comp)
 
 	def matplotlib_integration_comparison_initialisation(self):
 		
