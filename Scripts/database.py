@@ -43,7 +43,7 @@ class Database:
 	@MouvementInfo.cast_single
 	def get_mouvements_info(self, idMouvement):
 		"""Renvoie les infos associees a un mouvement idMouvement"""
-		sql = "SELECT * FROM DonneesMouvements WHERE idMouvement=%s"
+		sql = "SELECT * FROM DonneesMouvements WHERE idDonneeMouvement=%s"
 		return self.sql(sql, [idMouvement])[0]
 
 	@MesureSimple.cast
@@ -61,19 +61,6 @@ class Database:
 	def get_mouvement(self, idMouvement):
 		"""Renvoie toutes les données associées à idMouvement"""
 		return self.get_mouvements_info(idMouvement), self.get_mesure_simple(idMouvement), self.get_mesure_vect(idMouvement)
-
-	@Paquet.cast
-	def list_packets(self, idMouvement=None):
-		"""Renvoie la liste des paquets
-		Filtre optionnel sur un mouvement idMouvement
-		"""
-		sql = "SELECT * FROM Paquets"
-		params = []
-		if idMouvement is not None:
-			sql += " WHERE idPaquet IN (SELECT idPaquet FROM MesuresSimples WHERE idMouvement = %s) OR idPaquet IN (SELECT idPaquet FROM MesuresVect WHERE idMouvement = %s)"
-			params = [idMouvement, idMouvement]
-
-		return self.sql(sql, params)
 
 	@Capteur.cast
 	def list_capteurs(self):
@@ -201,7 +188,5 @@ class Database:
 
 	def last_user_id(self):
 		return self.sql("SELECT idUtilisateur FROM Utilisateurs ORDER BY idUtilisateur DESC LIMIT 1")[0][0]
-
-		
 
 db = Database()

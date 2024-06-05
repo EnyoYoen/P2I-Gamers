@@ -194,7 +194,7 @@ class MainWin(tk.Tk, DataServer):
 		self.server_event.idMvt = idMvt
 		self.server_event.set()
 
-		#self.get_current_comp()
+		self.get_current_comp()
 
 		while True: # Clear the queue
 			try:
@@ -348,13 +348,13 @@ class MainWin(tk.Tk, DataServer):
 				break
 
 		# nom_th = perceptron.predict(data)
-		mvmt_info, mesures_simple, mesures_vect = db.get_movement_data(self.server_event.idMvt)
+		mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(self.server_event.idMvt)
 
 		capteurs = {}
 
 		data_th = {}
 		data_exp = {}
-		for mesure_cat, mesures in [(data_exp, data), (data_th, itertools.chain(mesures_vect, mesures_simple))]
+		for mesure_cat, mesures in [(data_exp, data), (data_th, itertools.chain(mesures_vect, mesures_simple))]:
 			for mesure in mesures:
 				idCapteur = mesure.idCapteur
 				if idCapteur not in capteurs:
