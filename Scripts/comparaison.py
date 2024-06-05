@@ -95,7 +95,8 @@ def interpolation_simple(mvt_exp, mvt_th):
 def comparaison_direct(dico_th, dico_exp):  
     data = ['FlexiForce', 'Flexion', 'Centrale inertielle']
     # dico_th = dico_total[nom]
-    taux = 100
+    taux = []
+    box = {}
     for type in data:
         mvt_exp = dico_exp[type]
         err_i = 100
@@ -115,6 +116,10 @@ def comparaison_direct(dico_th, dico_exp):
             if type == 'Centrale inertielle':
                 mvt_exp_inter = interpolation_vect(mvt_exp, mvt_th_compare)
                 mvt_exp = mvt_exp_inter
+                err_teta = []
+                box["teta"] = err_teta
+                err_phi = []
+                box["phi"] = err_phi
                 if mvt_exp != 0 :  
                     for i in range(len(mvt_exp)):
                         x1 = mvt_th_compare[i].X
@@ -123,6 +128,18 @@ def comparaison_direct(dico_th, dico_exp):
                         x2 = mvt_exp[i].X
                         y2 = mvt_exp[i].Y
                         z2 = mvt_exp[i].Z
+
+                        r2 = sqrt((x2**2)+(y2**2)+(z2**2))
+                        teta2 = acos(z2/r2)
+                        phi2 = atan(y2/x2)
+                        r1 = sqrt((x1**2)+(y1**2)+(z1**2))
+                        teta1 = acos(z1/r1)
+                        phi1 = atan(y1/x1)
+                        err_t = 100*abs(teta1-teta2)/teta1
+                        err_p = 100*abs(phi1-phi2)/phi1
+                        err_teta.append(err_t)
+                        err_phi.append(err_p)
+
                         err_x = 100*abs(x1-x2)/x1
                         err_y = 100*abs(y1-y2)/y1
                         err_z = 100*abs(z1-z2)/z1
@@ -131,29 +148,51 @@ def comparaison_direct(dico_th, dico_exp):
                     err_f = np.mean(res)
                     if err_f < err_i:
                         err_i = err_f
-                    else:
-                        return taux
+                    # else:
+                    #     return taux, box
                 resultat = 100-err_i
                 resultat = round(resultat, 2)
-                taux = resultat
+                taux.append(resultat)
+            
+            elif type == 'FlexiForce':
+                mvt_exp_inter = interpolation_simple(mvt_exp, mvt_th)
+                mvt_exp = mvt_exp_inter
+                err_pression = []
+                box["pression"] = err_pression
+                if mvt_exp_inter != 0 :   
+                    for i in range(len(mvt_exp)):
+                        v1 = mvt_th[i].valeur    
+                        v2 = mvt_exp[i].valeur
+                        err = 100*abs(v1-v2)
+                        err_pression.append(err)
+                        res.append(err)   
+                    err_f = np.mean(res) 
+                    if err_f < err_i:
+                        err_i = err_f
+                resultat = 100-err_i
+                resultat = round(resultat, 2)
+                taux.append(resultat)
+
             else:
                 mvt_exp_inter = interpolation_simple(mvt_exp, mvt_th_compare)
                 mvt_exp = mvt_exp_inter
+                err_flexion = []
+                box["flexion"] = err_flexion
                 if mvt_exp_inter != 0 :   
                     for i in range(len(mvt_exp)):
                         v1 = mvt_th_compare[i].valeur    
                         v2 = mvt_exp[i].valeur
                         err = 100*abs(v1-v2)
-                        res.append(err)   
+                        res.append(err) 
+                        err_flexion.append(err)  
                     err_f = np.mean(res) 
                     if err_f < err_i:
                         err_i = err_f
-                    else:
-                        return taux
                 resultat = 100-err_i
                 resultat = round(resultat, 2)
-        taux = resultat
-    return taux
+                taux.append(resultat)
+        erreur = np.mean(taux)
+    return erreur, box
 
 def comparaison_total(dico_th, dico_exp):
     data = ['FlexiForce', 'Flexion', 'Centrale inertielle']
@@ -300,10 +339,10 @@ if __name__ == "__main__":
                                         (0,0, 0, 15, 10, 8, 1),(0,0, 0, 16, 4, 8, 1)])}
     
     # test :
-    taux = comparaison_direct(data_th, mvt_exp)   
-    print(taux)
+    erreur , box1 = comparaison_direct(data_th, mvt_exp)   
+    print(erreur)
     texte, box = comparaison_total(data_th, mvt_exp2)   
     print(texte)
-    print(box)
-    my_dict = box
+    my_dict = box1
     plt.boxplot(my_dict.values(), labels=my_dict.keys())
+    plt.show()
