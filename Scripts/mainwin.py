@@ -20,6 +20,7 @@ from matplotlib.figure import Figure
 import matplotlib.animation as animation
 from matplotlib import style
 style.use('ggplot')
+import itertools
 
 mvt_exp = MesureVect.from_raw_list([(0,0,1,2,3,1),(1,1,4,5,6,2),(2,2,7,8,9,3)])
 data_th = {"aurevoir":MesureVect.from_raw_list([(0,3,10,9,8,1),(0,4,7,6,5,1.5),(0,5,4,3,2,2),(0,6,1,1,1,2.6),(0,7,1,2,3,3)]),
@@ -193,7 +194,7 @@ class MainWin(tk.Tk, DataServer):
 		self.server_event.idMvt = idMvt
 		self.server_event.set()
 
-		#self.get_current_comp()
+		self.get_current_comp()
 
 		while True: # Clear the queue
 			try:
@@ -346,15 +347,32 @@ class MainWin(tk.Tk, DataServer):
 			except queue.Empty:
 				break
 
-		data_th = perceptron.predict(data)
+		# nom_th = perceptron.predict(data)
+		mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(self.server_event.idMvt)
 
-		value = cp.comparaison(data_th, data)
+		capteurs = {}
 
-		print(f'{value=}')
-		self.precision_var.set(f'{value=}%')
-		# TODO - Update StringVar
-  
-		self.after(1000, self.get_current_comp)
+		data_th = {}
+		data_exp = {}
+		for mesure_cat, mesures in [(data_exp, data), (data_th, itertools.chain(mesures_vect, mesures_simple))]:
+			for mesure in mesures:
+				idCapteur = mesure.idCapteur
+				if idCapteur not in capteurs:
+					capteur = db.get_capteur(idCapteur)
+					capteurs[idCapteur] = capteur.type
+
+					cat = capteurs[idCapteur]
+					if cat not in data_exp:
+						data_exp[cat] = []
+
+					mesure_cat[cat].append(mesure)
+
+		# value = cp.comparaison(data_th, data_exp)
+
+		# print(f'{value=}')
+		# self.precision_var.set(f'{value=}%')
+
+		# self.after(1000, self.get_current_comp)
 
 	def matplotlib_integration_comparison_initialisation(self):
 		
