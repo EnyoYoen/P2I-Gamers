@@ -28,6 +28,8 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 		post_data = self.rfile.read(content_length)
 		post_body = json.loads(post_data.decode('utf-8'))
 
+		self.send_data(post_body)
+
 		if self.event.is_set():
 			print(f'Saving 1 packet, size: {len(post_body)}')
 			start = time.time()
@@ -62,12 +64,17 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 		# self.wfile.write(b'Hello, World!')
 
 	def send_data(self, packet, thread=False):
+		return
 		if not thread:
 			threading.Thread(target=self.send_data, args=(packet, True)).start()
 			return
 
-		URL = 'http://localhost:13579'
-		requests.post(URL, data=json.dumps(packet))
+		URL = 'http://localhost:13579/UpdatePos?data=' + json.dumps(packet)
+		# URL = "http://localhost:13579/UpdatePos?bone=1&data={%22test%22:{%22bone%22:1,%20%22rotX%22:0.5}}"
+		try:
+			requests.get(URL)
+		except requests.ConnectionError as e:
+			print('Error while sending data to renderer')
 
 def run_custom_server(event, que):
 	server_address = ('', 8085)  # Use a custom port if needed

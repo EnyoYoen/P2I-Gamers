@@ -44,6 +44,8 @@ class MainWin(tk.Tk, DataServer):
 		self.a = self.f.add_subplot(111)
 
 		self.creer_widgets()
+		self.anim = animation.FuncAnimation(self.f, self.animate, interval=1000, cache_frame_data=False)
+
 
 	def creer_widgets(self):
 		"""
@@ -89,7 +91,7 @@ class MainWin(tk.Tk, DataServer):
 		#Liste pré enregistrement
 		self.list_pre_enregistrement = tk.Listbox(self.frame_pre_enregistrement, yscrollcommand=self.scrollbar_pre_enregistrement.set)
 		self.list_pre_enregistrement.grid(column=0, row=0, sticky='nesw')
-        
+		
 		self.data_list_historique = db.list_mouvements_info(self.user.idUtilisateur)
 		for i in range(len(self.data_list_historique)):
 			self.list_historique.insert(tk.END, str(i+1) + ' - ' + str(self.data_list_historique[i].dateCreation) ) 
@@ -112,8 +114,8 @@ class MainWin(tk.Tk, DataServer):
 		self.button_preenregistrement = tk.Button(self, text="Enregistrement", font=self.font, padx= 10, fg='#353535', bg='#ECFCCA')
 		self.button_preenregistrement.bind('<Button-1>', self.afficher_preenregistrement)
 		self.button_preenregistrement.grid(column=0, row=0, sticky='nesw')
-        
-        #Bouton historique
+		
+		#Bouton historique
 		self.button_historique = tk.Button(self, text="Historique", font=self.font, padx= 20, fg='#353535', bg='#FCEECA')
 		self.button_historique.bind('<Button-1>', self.afficher_historique)
 		self.button_historique.grid(column=1, row=0, sticky="nesw")
@@ -121,8 +123,8 @@ class MainWin(tk.Tk, DataServer):
 		#cadre visualisation
 		self.canevas = tk.Canvas(self, background='lightblue')
 		self.canevas.grid(column=2,columnspan=5,row=1,rowspan= 10, sticky='nesw')
-        
-        #ajustement de la taille relative
+		
+		#ajustement de la taille relative
 		#self.canevas.columnconfigure(1, weight=2)
 		#self.frame_pre_enregistrement.columnconfigure(1, weight=1)
 		
@@ -137,8 +139,8 @@ class MainWin(tk.Tk, DataServer):
 		self.precision_var = tk.StringVar()
 		self.label_pourcentage = tk.Label(textvariable=self.precision_var, fg='#444445')
 		self.label_pourcentage.grid(row=12, column=5)
-        
-        #image bouton start
+		
+		#image bouton start
 		self.img_start = tk.PhotoImage(file='Scripts/images/start.png')
 		self.img_pause = tk.PhotoImage(file='Scripts/images/pause.png')
 		self.img_stop = tk.PhotoImage(file='Scripts/images/stop.png')
@@ -182,6 +184,8 @@ class MainWin(tk.Tk, DataServer):
 	def animate(self, a):
 		pullData = open('sampleText.txt','r').read()
 		dataArray = pullData.split('\n')
+  
+
 		xar=[]
 		yar=[]
 		for eachLine in dataArray:
@@ -293,7 +297,6 @@ class MainWin(tk.Tk, DataServer):
 
 		self.sauvegarde()		
 
-		
 
 	def sauvegarde(self):
 		"""
@@ -329,7 +332,6 @@ class MainWin(tk.Tk, DataServer):
 			mvt_the[name] = db.get_mesure_vect(id) 
 		text = cp.comparaison_total(name_predict, mvt_the, mvt_exp) 
 		self.resultat = messagebox.showinfo(title='Info', message=text)
-
 
 	def afficher_historique(self, event):
 		"""
@@ -389,15 +391,13 @@ class MainWin(tk.Tk, DataServer):
 
 						mesure_cat[cat].append(mesure)
 
-			value = cp.comparaison(data_th, data_exp)
+			value = cp.comparaison_direct(data_th, data_exp)
 
 			print(f'{value=}')
 			self.precision_var.set(f'{value=}%')
 
-		
 
 	def matplotlib_integration_comparison_initialisation(self):
-		
 		self.fig_compa, self.ax_compa = plt.subplots()
 		self.dico_compa = {}
 		self.ax_compa.boxplot(x=(1,1))
@@ -406,10 +406,9 @@ class MainWin(tk.Tk, DataServer):
 		self.canvas_compa.draw()
 
 		self.canvas_compa.get_tk_widget().grid(row=6, column=7, rowspan=5, columnspan=1, sticky='nesw')
-	
+
 	def matplotlib_integration_comparison_update(self):
 		if self.running == True :
-
 			self.ax_compa.clear()
 			self.ax_compa.boxplot(self.dico_compa)
 			self.fig_compa.canvas.draw()
@@ -419,6 +418,5 @@ class MainWin(tk.Tk, DataServer):
 		self.dico_compa = dico
 
 if __name__ == "__main__":
-	fen = MainWin(10) #1 admin, #10 test #19 test_teacher #20 test_eleve
-	anim = animation.FuncAnimation(fen.f, fen.animate, interval=1000, cache_frame_data=False)
+	fen = MainWin(19) #1 admin, #10 test #19 test_teacher #20 test_eleve
 	fen.mainloop()	
