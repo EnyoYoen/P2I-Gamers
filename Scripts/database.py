@@ -41,39 +41,26 @@ class Database:
 		return self.sql(sql, [id_user])
 
 	@MouvementInfo.cast_single
-	def get_mouvements_info(self, idMouvement):
-		"""Renvoie les infos associees a un mouvement idMouvement"""
-		sql = "SELECT * FROM DonneesMouvements WHERE idMouvement=%s"
-		return self.sql(sql, [idMouvement])[0]
+	def get_mouvements_info(self, idDonneeMouvement):
+		"""Renvoie les infos associees a un mouvement idDonneeMouvement"""
+		sql = "SELECT * FROM DonneesMouvements WHERE idDonneeMouvement=%s"
+		return self.sql(sql, [idDonneeMouvement])[0]
 
 	@MesureSimple.cast
-	def get_mesure_simple(self, idMouvement):
-		"""Renvoie la liste de mesures simples correspondant au mouvement idMouvement"""
-		sql = "SELECT * FROM MesuresSimples WHERE idMouvement = %s"
-		return self.sql(sql, [idMouvement])
+	def get_mesure_simple(self, idDonneeMouvement):
+		"""Renvoie la liste de mesures simples correspondant au mouvement idDonneeMouvement"""
+		sql = "SELECT * FROM MesuresSimples WHERE idDonneeMouvement = %s"
+		return self.sql(sql, [idDonneeMouvement])
 
 	@MesureVect.cast
-	def get_mesure_vect(self, idMouvement):
-		"""Renvoie la liste de mesures vectorielles correspondant au mouvement idMouvement"""
+	def get_mesure_vect(self, idDonneeMouvement):
+		"""Renvoie la liste de mesures vectorielles correspondant au mouvement idDonneeMouvement"""
 		sql = "SELECT * FROM MesuresVect WHERE idDonneeMouvement = %s"
-		return self.sql(sql, [idMouvement])
+		return self.sql(sql, [idDonneeMouvement])
 
-	def get_mouvement(self, idMouvement):
-		"""Renvoie toutes les données associées à idMouvement"""
-		return self.get_mouvements_info(idMouvement), self.get_mesure_simple(idMouvement), self.get_mesure_vect(idMouvement)
-
-	@Paquet.cast
-	def list_packets(self, idMouvement=None):
-		"""Renvoie la liste des paquets
-		Filtre optionnel sur un mouvement idMouvement
-		"""
-		sql = "SELECT * FROM Paquets"
-		params = []
-		if idMouvement is not None:
-			sql += " WHERE idPaquet IN (SELECT idPaquet FROM MesuresSimples WHERE idMouvement = %s) OR idPaquet IN (SELECT idPaquet FROM MesuresVect WHERE idMouvement = %s)"
-			params = [idMouvement, idMouvement]
-
-		return self.sql(sql, params)
+	def get_mouvement(self, idDonneeMouvement):
+		"""Renvoie toutes les données associées à idDonneeMouvement"""
+		return self.get_mouvements_info(idDonneeMouvement), self.get_mesure_simple(idDonneeMouvement), self.get_mesure_vect(idDonneeMouvement)
 
 	@Capteur.cast
 	def list_capteurs(self):
@@ -84,7 +71,7 @@ class Database:
 	@Capteur.cast_single
 	def get_capteur(self, idCapteur):
 		"""Renvoie le capteur correspondant à idCapteur"""
-		sql = "SELECT * FROM Capteurs WHERE idCapteur=%s"
+		sql = "SELECT c.*, tc.nomCapteur, tc.fabricant, tc.TypeCapteur FROM Capteurs c, TypeCapteur tc WHERE idCapteur=%s and c.idPlacement=tc.idPlacement"
 		return self.sql(sql, [idCapteur])[0]
 
 	@Utilisateur.cast
@@ -201,7 +188,5 @@ class Database:
 
 	def last_user_id(self):
 		return self.sql("SELECT idUtilisateur FROM Utilisateurs ORDER BY idUtilisateur DESC LIMIT 1")[0][0]
-
-		
 
 db = Database()

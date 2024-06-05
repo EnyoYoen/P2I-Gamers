@@ -12,15 +12,15 @@ import comparaison as cp
 from server import DataServer
 import namewin
 from tkinter import font
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
-
 import matplotlib
 matplotlib.use("TkAgg")
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import matplotlib.animation as animation
 from matplotlib import style
 style.use('ggplot')
+import itertools
 
 mvt_exp = MesureVect.from_raw_list([(0,0,1,2,3,1),(1,1,4,5,6,2),(2,2,7,8,9,3)])
 data_th = {"aurevoir":MesureVect.from_raw_list([(0,3,10,9,8,1),(0,4,7,6,5,1.5),(0,5,4,3,2,2),(0,6,1,1,1,2.6),(0,7,1,2,3,3)]),
@@ -61,6 +61,7 @@ class MainWin(tk.Tk, DataServer):
 		self.columnconfigure(0, weight=0)
 		self.columnconfigure(1, weight=0)
 		self.label.grid(row=0, column=0, columnspan=8)
+		self.is_comparaison = True
 
 		#Frame historique
 		self.frame_historique = tk.Frame(self)
@@ -119,7 +120,7 @@ class MainWin(tk.Tk, DataServer):
 		
 		#cadre visualisation
 		self.canevas = tk.Canvas(self, background='lightblue')
-		self.canevas.grid(column=2,columnspan=4,row=1,rowspan= 10, sticky='nesw')
+		self.canevas.grid(column=2,columnspan=5,row=1,rowspan= 10, sticky='nesw')
         
         #ajustement de la taille relative
 		#self.canevas.columnconfigure(1, weight=2)
@@ -150,13 +151,34 @@ class MainWin(tk.Tk, DataServer):
 
 		# graphe 
 		self.graph()
-		self.canvas.get_tk_widget().grid(row=1, column=6, rowspan=5, columnspan=2)
+		self.canvas.get_tk_widget().grid(row=1, column=7, rowspan=5, columnspan=1, sticky='nesw')
 		
+		#Button 
+		self.bouton_desac_compa = tk.Button(self, text='Désactiver comparaison')
+		self.bouton_desac_compa.bind('<Button-1>', self.off_compa)
+		self.bouton_desac_compa.grid(row=11, column=7)
+
+		self.bouton_act_compa = tk.Button(self, text='Activer comparaison')
+		self.bouton_act_compa.bind('<Button-1>', self.on_compa)
+
 		#Exit button
 		self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy, fg='#444445', bg='#FFE8DF')
 		self.exit_bouton.bind('<Button-1>',self.quitter)
-		self.exit_bouton.grid(row=14, column=4)
+		self.exit_bouton.grid(row=14, column=5)
+
+		self.matplotlib_integration_comparison_initialisation()
+
 	
+	def off_compa(self, event):
+		self.is_comparaison = False
+		self.bouton_desac_compa.grid_forget()
+		self.bouton_act_compa.grid(row=11, column=7)
+
+	def on_compa(self, event):
+		self.is_comparaison = True
+		self.bouton_act_compa.grid_forget()
+		self.bouton_desac_compa.grid(row=11, column=7)
+
 	def animate(self, a):
 		pullData = open('sampleText.txt','r').read()
 		dataArray = pullData.split('\n')
@@ -190,8 +212,8 @@ class MainWin(tk.Tk, DataServer):
 		idMvt = db.add_movement_data(self.user.idUtilisateur, 1, now, None)
 		self.server_event.idMvt = idMvt
 		self.server_event.set()
-
-		#self.get_current_comp()
+		
+		self.get_current_comp()
 
 		while True: # Clear the queue
 			try:
@@ -209,6 +231,7 @@ class MainWin(tk.Tk, DataServer):
 		
 		self.bouton_start.destroy()
 		self.start_time = datetime.datetime.now()
+		self.matplotlib_integration_comparison_update()
 		self.update_time()
 
 	def update_time(self):
@@ -247,6 +270,7 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_pause.grid(row=11, column=3)
 		
 		self.update_time()
+		self.matplotlib_integration_comparison_update()
 
 	def arret(self, event) :
 		"""
@@ -262,7 +286,8 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_pause.destroy()
 		self.bouton_start = tk.Button(self, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
-		self.bouton_start.grid(row=11, column=0, columnspan=8)
+		self.bouton_start.grid(row=11, column=4)
+		
 
 		#self.compare_message()
 
@@ -331,29 +356,67 @@ class MainWin(tk.Tk, DataServer):
 
 		namewin.NameWin(callback)
 
-
-		
-
 	def get_current_comp(self):
 		if not self.running:
 			return
-		data = []
-		
-		while True: # Get all data from queue
-			try:
-				data.append(self.dataQueue.get_nowait())
-			except queue.Empty:
-				break
-
-		data_th = perceptron.predict(data)
-
-		value = cp.comparaison(data_th, data)
-
-		print(f'{value=}')
-		self.precision_var.set(f'{value=}%')
-		# TODO - Update StringVar
-  
 		self.after(1000, self.get_current_comp)
+		if self.is_comparaison:
+			data = []
+			
+			while True: # Get all data from queue
+				try:
+					data.append(self.dataQueue.get_nowait())
+				except queue.Empty:
+					break
+
+			nom_th = perceptron.predict(data)
+			mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(self.server_event.idMvt)
+
+			capteurs = {}
+
+			data_th = {}
+			data_exp = {}
+			for mesure_cat, mesures in [(data_exp, data), (data_th, itertools.chain(mesures_vect, mesures_simple))]:
+				for mesure in mesures:
+					idCapteur = mesure.idCapteur
+					if idCapteur not in capteurs:
+						capteur = db.get_capteur(idCapteur)
+						capteurs[idCapteur] = capteur.type
+
+						cat = capteurs[idCapteur]
+						if cat not in data_exp:
+							data_exp[cat] = []
+
+						mesure_cat[cat].append(mesure)
+
+			value = cp.comparaison(data_th, data_exp)
+
+			print(f'{value=}')
+			self.precision_var.set(f'{value=}%')
+
+		
+
+	def matplotlib_integration_comparison_initialisation(self):
+		
+		self.fig_compa, self.ax_compa = plt.subplots()
+		self.dico_compa = {}
+		self.ax_compa.boxplot(x=(1,1))
+
+		self.canvas_compa = FigureCanvasTkAgg(self.fig_compa, master = self) 
+		self.canvas_compa.draw()
+
+		self.canvas_compa.get_tk_widget().grid(row=6, column=7, rowspan=5, columnspan=1, sticky='nesw')
+	
+	def matplotlib_integration_comparison_update(self):
+		if self.running == True :
+
+			self.ax_compa.clear()
+			self.ax_compa.boxplot(self.dico_compa)
+			self.fig_compa.canvas.draw()
+			self.after(1000, self.matplotlib_integration_comparison_update)
+
+	def integration_in_right_pace(self, dico:dict):
+		self.dico_compa = dico
 
 if __name__ == "__main__":
 	fen = MainWin(10) #1 admin, #10 test #19 test_teacher #20 test_eleve

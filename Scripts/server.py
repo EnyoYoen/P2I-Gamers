@@ -41,14 +41,16 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 				if packet['type'] == 'simple':
 					for idCapteur, value in packet['data'].items():
 						simples.append((int(idCapteur)+1, idDonneeMouvement, date, value))
-						mesure = MesureSimple.from_raw((int(idCapteur)+1, date, value, idPaquet, idDonneeMouvement))
+						mesure = MesureSimple.from_raw((int(idCapteur)+1, idDonneeMouvement, date, value))
+
+						self.que.put(mesure)
 
 				elif packet['type'] == 'vector':
 					for idCapteur, vec in packet['data'].items():
 						vects.append((int(idCapteur)+1, idDonneeMouvement, date, *vec))
-						mesure = MesureVect.from_raw((int(idCapteur)+1, date, *vec, idPaquet, idDonneeMouvement))
+						mesure = MesureVect.from_raw((int(idCapteur)+1, idDonneeMouvement, date, *vec, idPaquet))
 
-				self.que.put(mesure)
+						self.que.put(mesure)
 
 			db.add_mesures_multiples(simples, vects)
 
@@ -87,5 +89,43 @@ class DataServer:
 		run_custom_server(event, que)
 
 if __name__ == '__main__':
-	event = threading.Event()
-	run_custom_server(event)
+	# event = threading.Event()
+	# run_custom_server(event)
+	serv = DataServer()
+	serv.server_event.set()
+	serv.server_event.idMvt = 2
+	moy = serv.dataQueue.get()
+
+	while True:
+		data = serv.dataQueue.get()
+		if isinstance(data, MesureSimple):
+			print(f"Capteur {data.idCapteur} : {data.valeur}")
+
+	import matplotlib.pyplot as plt
+
+	# You probably won't need this if you're embedding things in a tkinter plot...
+	plt.ion()
+	fig = plt.figure()
+	ax = fig.add_subplot(111)
+
+	x, y = [time.time()], [moy]
+	lines = []
+	for datay in zip(*y):
+		line, = ax.plot(x, datay, '-') # Returns a tuple of line objects, thus the comma
+		lines.append(line)
+  
+	while True:
+		time.sleep(1)
+		while not serv.dataQueue.empty:
+			moy = list(map(lambda e: e[0]*0.8+e[1]*0.2, zip(moy, serv.dataQueue.get())))
+			y.append(moy)
+
+		x.append(time.time())
+		if len(x) > 50:
+			x, y = x[-50:], y[-50:]
+
+		for line, datay in zip(lines, zip(*y)):
+			line.set_xdata(x)
+			line.set_ydata(datay)
+		fig.canvas.draw()
+		fig.canvas.flush_events()
