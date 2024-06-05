@@ -367,12 +367,12 @@ class MainWin(tk.Tk, DataServer):
 
 					mesure_cat[cat].append(mesure)
 
-		value = cp.comparaison(data_th, data_exp)
+		# value = cp.comparaison(data_th, data_exp)
 
-		print(f'{value=}')
-		self.precision_var.set(f'{value=}%')
+		# print(f'{value=}')
+		# self.precision_var.set(f'{value=}%')
 
-		self.after(1000, self.get_current_comp)
+		# self.after(1000, self.get_current_comp)
 
 	def matplotlib_integration_comparison_initialisation(self):
 		

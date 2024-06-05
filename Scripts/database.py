@@ -41,26 +41,26 @@ class Database:
 		return self.sql(sql, [id_user])
 
 	@MouvementInfo.cast_single
-	def get_mouvements_info(self, idMouvement):
-		"""Renvoie les infos associees a un mouvement idMouvement"""
+	def get_mouvements_info(self, idDonneeMouvement):
+		"""Renvoie les infos associees a un mouvement idDonneeMouvement"""
 		sql = "SELECT * FROM DonneesMouvements WHERE idDonneeMouvement=%s"
-		return self.sql(sql, [idMouvement])[0]
+		return self.sql(sql, [idDonneeMouvement])[0]
 
 	@MesureSimple.cast
-	def get_mesure_simple(self, idMouvement):
-		"""Renvoie la liste de mesures simples correspondant au mouvement idMouvement"""
-		sql = "SELECT * FROM MesuresSimples WHERE idMouvement = %s"
-		return self.sql(sql, [idMouvement])
+	def get_mesure_simple(self, idDonneeMouvement):
+		"""Renvoie la liste de mesures simples correspondant au mouvement idDonneeMouvement"""
+		sql = "SELECT * FROM MesuresSimples WHERE idDonneeMouvement = %s"
+		return self.sql(sql, [idDonneeMouvement])
 
 	@MesureVect.cast
-	def get_mesure_vect(self, idMouvement):
-		"""Renvoie la liste de mesures vectorielles correspondant au mouvement idMouvement"""
+	def get_mesure_vect(self, idDonneeMouvement):
+		"""Renvoie la liste de mesures vectorielles correspondant au mouvement idDonneeMouvement"""
 		sql = "SELECT * FROM MesuresVect WHERE idDonneeMouvement = %s"
-		return self.sql(sql, [idMouvement])
+		return self.sql(sql, [idDonneeMouvement])
 
-	def get_mouvement(self, idMouvement):
-		"""Renvoie toutes les données associées à idMouvement"""
-		return self.get_mouvements_info(idMouvement), self.get_mesure_simple(idMouvement), self.get_mesure_vect(idMouvement)
+	def get_mouvement(self, idDonneeMouvement):
+		"""Renvoie toutes les données associées à idDonneeMouvement"""
+		return self.get_mouvements_info(idDonneeMouvement), self.get_mesure_simple(idDonneeMouvement), self.get_mesure_vect(idDonneeMouvement)
 
 	@Capteur.cast
 	def list_capteurs(self):
