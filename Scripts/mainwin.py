@@ -399,8 +399,11 @@ class MainWin(tk.Tk, DataServer):
 	def matplotlib_integration_comparison_initialisation(self):
 		
 		self.fig_compa, self.ax_compa = plt.subplots()
+		self.ax_compa.set_ylim(0, 5)
 		self.dico_compa = {}
-		self.ax_compa.boxplot(x=(1,1))
+		self.dico_donnee = {}
+		# self.ax_compa.boxplot(x=(1,1))
+		self.nbr_garde = 100
 
 		self.canvas_compa = FigureCanvasTkAgg(self.fig_compa, master = self) 
 		self.canvas_compa.draw()
@@ -411,12 +414,31 @@ class MainWin(tk.Tk, DataServer):
 		if self.running == True :
 
 			self.ax_compa.clear()
-			self.ax_compa.boxplot(self.dico_compa)
+			# self.ax_compa.boxplot(self.dico_compa)
+			for k,v in self.dico_donnee.items():
+				v[0] = v[0][-self.nbr_garde:]
+				v[1] = v[1][-self.nbr_garde:]
+				self.ax_compa.plot(v[0],v[1])
 			self.fig_compa.canvas.draw()
 			self.after(1000, self.matplotlib_integration_comparison_update)
 
 	def integration_in_right_pace(self, dico:dict):
 		self.dico_compa = dico
+
+	def donne_recup_william(self, liste:list):
+		for obj in liste:
+			if isinstance(obj, MesureSimple):
+				if self.dico_donnee.get(obj['idCapteur']):
+					self.dico_donnee[obj['idCapteur']][0].append(obj['dateCreation'])
+					self.dico_donnee[obj['idCapteur']][1].append(obj['valeur'])
+				else:
+					self.dico_donnee[obj['idCapteur']] = [[obj['dateCreation']], [obj['valeur']]]
+			if isinstance(obj, MesureVect):
+				if self.dico_donnee.get(obj['idCapteur']):
+					self.dico_donnee[obj['idCapteur']][0].append(obj['dateCreation'])
+					self.dico_donnee[obj['idCapteur']][1].append( obj['X'])
+				else:
+					self.dico_donnee[obj['idCapteur']] = [[obj['dateCreation']], [obj['X']]]
 
 if __name__ == "__main__":
 	fen = MainWin(10) #1 admin, #10 test #19 test_teacher #20 test_eleve
