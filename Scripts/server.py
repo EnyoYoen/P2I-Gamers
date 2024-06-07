@@ -38,11 +38,11 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 			idDonneeMouvement = -1
 
 		fingers_ranges = {
-			1:[0.4, 0.2],
-			2:[0.4, 0.2],
-			3:[0.4, 0.2],
-			4:[0.4, 0.2],
-			5:[0.24, 0.17]
+			1:[0.2, 0],
+			2:[0.37, 0.2],
+			3:[0.25, 0.17],
+			4:[0.2, 0],
+			5:[0.33, 0.2],
 		}
 
 		simples, vects = [], []
@@ -52,8 +52,11 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 			if packet['type'] == 'simple':
 				for idCapteur, value in packet['data'].items():
 					idCapteur = int(idCapteur)+1
-					frange = fingers_ranges[idCapteur]
-					value = value-frange[0] / (frange[1]-frange[0])
+					if idCapteur > 5:
+						frange = fingers_ranges[idCapteur-5]
+						value = (value-frange[1]) / (frange[0]-frange[1])
+
+						value = min(max(value, 0), 1)
 
 					simples.append((idCapteur, idDonneeMouvement, date, value))
 					mesure = MesureSimple.from_raw((idCapteur, idDonneeMouvement, date, value))

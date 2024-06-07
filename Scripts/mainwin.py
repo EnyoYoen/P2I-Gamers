@@ -463,8 +463,8 @@ class MainWin(tk.Tk, DataServer):
 		convert_date = lambda i: datetime.datetime.strptime(i, '%Y-%m-%d %H:%M:%S').timestamp()
 		for obj in liste:
 			if isinstance(obj, MesureSimple):
-				if obj.idCapteur < 6:
-					continue
+				# if obj.idCapteur < 6:
+				# 	continue
 				now = convert_date(obj.dateCreation)
 				self.graphs.add_data('line', obj.idCapteur, [now], [obj.valeur], value_limit=now-20) # last 20 sec
     
