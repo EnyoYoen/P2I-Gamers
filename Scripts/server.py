@@ -87,12 +87,13 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 
 		serialized = ';'.join([','.join([str(k), *list(map(str, v))]) for k, v in out.items()])
 
-		URL = 'http://localhost:13579/data?data=' + serialized
+		URL = 'http://nitro5:13579/data?data=' + serialized
 		# URL = "http://localhost:13579/UpdatePos?bone=1&data={%22test%22:{%22bone%22:1,%20%22rotX%22:0.5}}"
 		try:
 			requests.get(URL)
 		except requests.ConnectionError as e:
-			print('Error while sending data to renderer:', e)
+			# print('Error while sending data to renderer:', e)
+			pass
 
 
 

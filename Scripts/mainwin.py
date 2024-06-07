@@ -31,7 +31,7 @@ class MainWin(tk.Tk, DataServer):
 	def __init__(self, user_id):
 		super().__init__()
 		DataServer.__init__(self)
-		self.user = db.get_user(user_id)
+		# self.user = db.get_user(user_id)
 
 
 		self.title('G.M.T.')
@@ -95,7 +95,8 @@ class MainWin(tk.Tk, DataServer):
 		self.list_pre_enregistrement = tk.Listbox(self.frame_pre_enregistrement, yscrollcommand=self.scrollbar_pre_enregistrement.set)
 		self.list_pre_enregistrement.grid(column=0, row=0, sticky='nesw')
 		
-		self.data_list_historique = db.list_mouvements_info(self.user.idUtilisateur)
+		self.data_list_historique = db.list_mouvements_info(1)
+		# self.data_list_historique = db.list_mouvements_info(self.user.idUtilisateur)
 		for i in range(len(self.data_list_historique)):
 			self.list_historique.insert(tk.END, str(i+1) + ' - ' + str(self.data_list_historique[i].dateCreation) ) 
 
@@ -391,8 +392,8 @@ class MainWin(tk.Tk, DataServer):
 
 		if self.is_comparaison:
 			try:
-				nom_th = perceptron.predict(data)
-				mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(self.server_event.idMvt)
+				# nom_th = perceptron.predict(data)
+				mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(310)
 
 				capteurs = {}
 
@@ -462,6 +463,8 @@ class MainWin(tk.Tk, DataServer):
 		convert_date = lambda i: datetime.datetime.strptime(i, '%Y-%m-%d %H:%M:%S').timestamp()
 		for obj in liste:
 			if isinstance(obj, MesureSimple):
+				if obj.idCapteur < 6:
+					continue
 				now = convert_date(obj.dateCreation)
 				self.graphs.add_data('line', obj.idCapteur, [now], [obj.valeur], value_limit=now-20) # last 20 sec
     
