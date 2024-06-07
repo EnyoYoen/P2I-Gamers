@@ -37,14 +37,29 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 		except AttributeError:
 			idDonneeMouvement = -1
 
+		fingers_ranges = {
+			1:[0.2, 0],
+			2:[0.37, 0.2],
+			3:[0.25, 0.17],
+			4:[0.2, 0],
+			5:[0.33, 0.2],
+		}
+
 		simples, vects = [], []
 		for packet in post_body:
 			date = packet['time']
 
 			if packet['type'] == 'simple':
 				for idCapteur, value in packet['data'].items():
-					simples.append((int(idCapteur)+1, idDonneeMouvement, date, value))
-					mesure = MesureSimple.from_raw((int(idCapteur)+1, idDonneeMouvement, date, value))
+					idCapteur = int(idCapteur)+1
+					if idCapteur > 5:
+						frange = fingers_ranges[idCapteur-5]
+						value = (value-frange[1]) / (frange[0]-frange[1])
+
+						value = min(max(value, 0), 1)
+
+					simples.append((idCapteur, idDonneeMouvement, date, value))
+					mesure = MesureSimple.from_raw((idCapteur, idDonneeMouvement, date, value))
 
 					self.que.put(mesure)
 
@@ -87,12 +102,13 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 
 		serialized = ';'.join([','.join([str(k), *list(map(str, v))]) for k, v in out.items()])
 
-		URL = 'http://localhost:13579/data?data=' + serialized
+		URL = 'http://nitro5:13579/data?data=' + serialized
 		# URL = "http://localhost:13579/UpdatePos?bone=1&data={%22test%22:{%22bone%22:1,%20%22rotX%22:0.5}}"
 		try:
 			requests.get(URL)
 		except requests.ConnectionError as e:
-			print('Error while sending data to renderer:', e)
+			# print('Error while sending data to renderer:', e)
+			pass
 
 
 

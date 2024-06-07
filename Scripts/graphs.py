@@ -27,6 +27,8 @@ class Graphs:
 			return
 
 		for graphtype in set(self.update_queue):
+			if graphtype not in self.graphs:
+				continue
 			self.graphs[graphtype].plot()
 
 		self.update_queue = []
