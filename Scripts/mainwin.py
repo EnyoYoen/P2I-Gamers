@@ -5,6 +5,7 @@ import datetime
 import queue
 import tkinter as tk
 from tkinter import messagebox
+from graphs import *
 from dataclass import *
 from database import db
 import perceptron
@@ -40,11 +41,13 @@ class MainWin(tk.Tk, DataServer):
 
 		self.geometry(f"{screen_width}x{screen_height}")
 
-		self.f = Figure(figsize=(2,2), dpi=100)
-		self.a = self.f.add_subplot(111)
+		# self.f = Figure(figsize=(2,2), dpi=100)
+		# self.a = self.f.add_subplot(111)
 
 		self.creer_widgets()
-		self.anim = animation.FuncAnimation(self.f, self.animate, interval=1000, cache_frame_data=False)
+		# self.anim = animation.FuncAnimation(self.f, self.animate, interval=1000, cache_frame_data=False)
+		self.get_current_comp()
+		# self.matplotlib_integration_comparison_update()
 
 
 	def creer_widgets(self):
@@ -152,8 +155,8 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_restart = tk.Button(self, image=self.img_start)
 
 		# graphe 
-		self.graph()
-		self.canvas.get_tk_widget().grid(row=1, column=7, rowspan=5, columnspan=1, sticky='nesw')
+		# self.graph()
+		# self.canvas.get_tk_widget().grid(row=1, column=7, rowspan=5, columnspan=1, sticky='nesw')
 		
 		#Button 
 		self.bouton_desac_compa = tk.Button(self, text='Désactiver comparaison')
@@ -163,12 +166,27 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_act_compa = tk.Button(self, text='Activer comparaison')
 		self.bouton_act_compa.bind('<Button-1>', self.on_compa)
 
-		#Exit button
-		self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy, fg='#444445', bg='#FFE8DF')
-		self.exit_bouton.bind('<Button-1>',self.quitter)
-		self.exit_bouton.grid(row=14, column=5)
+		# #Exit button
+		# self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy, fg='#444445', bg='#FFE8DF')
+		# self.exit_bouton.bind('<Button-1>',self.quitter)
+		# self.exit_bouton.grid(row=14, column=5)
 
-		self.matplotlib_integration_comparison_initialisation()
+		# self.matplotlib_integration_comparison_initialisation()
+
+		# Graphs
+		
+		graphs_class = {
+			'line': LineGraph,
+			'3D': Graph3D,
+			'boxplot': BoxPlot,
+			'line2': LineGraph,
+		}
+		kwargs = {
+			'3D': {'xlim': (-1, 1), 'ylim': (-1, 1), 'zlim': (-1, 1)}
+		}
+		self.graph_frame = Frame(self, bg='red')
+		self.graphs = Graphs(self.graph_frame, graphs_class, kwargs)
+		self.graph_frame.grid(row=1, column=7, rowspan=10, columnspan=1, sticky='nesw')
 
 	
 	def off_compa(self, event):
@@ -184,7 +202,6 @@ class MainWin(tk.Tk, DataServer):
 	def animate(self, a):
 		pullData = open('sampleText.txt','r').read()
 		dataArray = pullData.split('\n')
-  
 
 		xar=[]
 		yar=[]
@@ -216,8 +233,6 @@ class MainWin(tk.Tk, DataServer):
 		idMvt = db.add_movement_data(self.user.idUtilisateur, 1, now, None)
 		self.server_event.idMvt = idMvt
 		self.server_event.set()
-		
-		self.get_current_comp()
 
 		while True: # Clear the queue
 			try:
@@ -235,7 +250,7 @@ class MainWin(tk.Tk, DataServer):
 		
 		self.bouton_start.destroy()
 		self.start_time = datetime.datetime.now()
-		self.matplotlib_integration_comparison_update()
+		# self.matplotlib_integration_comparison_update()
 		self.update_time()
 
 	def update_time(self):
@@ -274,7 +289,7 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_pause.grid(row=11, column=3)
 		
 		self.update_time()
-		self.matplotlib_integration_comparison_update()
+		# self.matplotlib_integration_comparison_update()
 
 	def arret(self, event) :
 		"""
@@ -297,7 +312,6 @@ class MainWin(tk.Tk, DataServer):
 
 		self.sauvegarde()		
 
-
 	def sauvegarde(self):
 		"""
 		Mise dans l'historique ou dans l'enregistrement
@@ -316,7 +330,6 @@ class MainWin(tk.Tk, DataServer):
 		if histo:
 			historique = db.list_mouvements_info(self.user.idUtilisateur)  #Moyen opti :/
 			self.list_historique.insert(tk.END, str(len(historique)) + ' - ' + str(historique[-1].dateCreation) ) 
-
 
 	def compare_message(self) :
 		'''
@@ -359,47 +372,63 @@ class MainWin(tk.Tk, DataServer):
 		namewin.NameWin(callback)
 
 	def get_current_comp(self):
+		self.after(100, self.get_current_comp)
+
+		data = []
+		
+		while True: # Get all data from queue
+			try:
+				data.append(self.dataQueue.get_nowait())
+			except queue.Empty:
+				break
+
+		if data:
+			self.add_data_sensors(data)
+		# self.donne_recup_william(data)
+
 		if not self.running:
 			return
-		self.after(1000, self.get_current_comp)
+
 		if self.is_comparaison:
-			data = []
-			
-			while True: # Get all data from queue
-				try:
-					data.append(self.dataQueue.get_nowait())
-				except queue.Empty:
-					break
+			try:
+				nom_th = perceptron.predict(data)
+				mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(self.server_event.idMvt)
 
-			nom_th = perceptron.predict(data)
-			mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(self.server_event.idMvt)
+				capteurs = {}
 
-			capteurs = {}
+				data_th = {}
+				data_exp = {}
+				for mesure_cat, mesures in [(data_exp, data), (data_th, itertools.chain(mesures_vect, mesures_simple))]:
+					for mesure in mesures:
+						idCapteur = mesure.idCapteur
+						if idCapteur not in capteurs:
+							capteur = db.get_capteur(idCapteur)
+							capteurs[idCapteur] = capteur.type
 
-			data_th = {}
-			data_exp = {}
-			for mesure_cat, mesures in [(data_exp, data), (data_th, itertools.chain(mesures_vect, mesures_simple))]:
-				for mesure in mesures:
-					idCapteur = mesure.idCapteur
-					if idCapteur not in capteurs:
-						capteur = db.get_capteur(idCapteur)
-						capteurs[idCapteur] = capteur.type
+							cat = capteurs[idCapteur]
+							if cat not in data_exp:
+								data_exp[cat] = []
 
-						cat = capteurs[idCapteur]
-						if cat not in data_exp:
-							data_exp[cat] = []
+							mesure_cat[cat].append(mesure)
 
-						mesure_cat[cat].append(mesure)
+				value = cp.comparaison_direct(data_th, data_exp)
 
-			value = cp.comparaison_direct(data_th, data_exp)
+				print(f'{value=}')
+				self.precision_var.set(f'{value=}%')
+    
+				self.graphs.add_data('line2', 1, [datetime.datetime.now().timestamp()], [value], value_limit=20)
+				self.graphs.add_data('line2', 2, [datetime.datetime.now().timestamp()], [100], limit=1) # Prevent resize
+				self.graphs.add_data('line2', 3, [datetime.datetime.now().timestamp()], [0], limit=1)
 
-			print(f'{value=}')
-			self.precision_var.set(f'{value=}%')
+				self.graphs.add_data('boxplot', 1, [datetime.datetime.now().timestamp()], [value], value_limit=20)
+
+			except Exception as e:
+				print(f'Erreur pendant la comparaison: {e}')
 
 
 	def matplotlib_integration_comparison_initialisation(self):
 		self.fig_compa, self.ax_compa = plt.subplots()
-		self.ax_compa.set_ylim(0, 5)
+		# self.ax_compa.set_ylim(0, 5)
 		self.dico_compa = {}
 		self.dico_donnee = {}
 		# self.ax_compa.boxplot(x=(1,1))
@@ -411,33 +440,54 @@ class MainWin(tk.Tk, DataServer):
 		self.canvas_compa.get_tk_widget().grid(row=6, column=7, rowspan=5, columnspan=1, sticky='nesw')
 
 	def matplotlib_integration_comparison_update(self):
-		if self.running == True :
-			self.ax_compa.clear()
-			# self.ax_compa.boxplot(self.dico_compa)
-			for k,v in self.dico_donnee.items():
-				v[0] = v[0][-self.nbr_garde:]
-				v[1] = v[1][-self.nbr_garde:]
-				self.ax_compa.plot(v[0],v[1])
-			self.fig_compa.canvas.draw()
-			self.after(1000, self.matplotlib_integration_comparison_update)
+		self.ax_compa.clear()
+		# self.ax_compa.boxplot(self.dico_compa)
+		for k,v in self.dico_donnee.items():
+			if not isinstance(v[0][0], str):
+				continue
+			v = v[0][-self.nbr_garde:], v[1][-self.nbr_garde:]
+			try:
+				vtmp = [datetime.datetime.strptime(i, '%Y-%m-%d %H:%M:%S').timestamp() for i in v[0]]
+			except Exception as e:
+				pass
+			self.ax_compa.plot(vtmp, v[1])
+			self.dico_donnee[k] = v
+		self.fig_compa.canvas.draw()
+		self.after(100, self.matplotlib_integration_comparison_update)
 
-	def integration_in_right_pace(self, dico:dict):
+	def integration_in_right_pace(self, dico:dict): # Not used
 		self.dico_compa = dico
 
-	def donne_recup_william(self, liste:list):
+	def add_data_sensors(self, liste:list):
+		convert_date = lambda i: datetime.datetime.strptime(i, '%Y-%m-%d %H:%M:%S').timestamp()
 		for obj in liste:
 			if isinstance(obj, MesureSimple):
-				if self.dico_donnee.get(obj['idCapteur']):
-					self.dico_donnee[obj['idCapteur']][0].append(obj['dateCreation'])
-					self.dico_donnee[obj['idCapteur']][1].append(obj['valeur'])
-				else:
-					self.dico_donnee[obj['idCapteur']] = [[obj['dateCreation']], [obj['valeur']]]
+				now = convert_date(obj.dateCreation)
+				self.graphs.add_data('line', obj.idCapteur, [now], [obj.valeur], value_limit=now-20) # last 20 sec
+    
+				off = 1
+				self.graphs.add_data('line', 11, [now], [0], limit=1) # prevent auto-resize
+				self.graphs.add_data('line', 12, [now], [off], limit=1)
+				# if self.dico_donnee.get(obj.idCapteur):
+				# 	self.dico_donnee[obj.idCapteur][0].append(obj.dateCreation)
+				# 	self.dico_donnee[obj.idCapteur][1].append(obj.valeur)
+				# else:
+				# 	self.dico_donnee[obj.idCapteur] = [[obj.dateCreation], [obj.valeur]]
 			if isinstance(obj, MesureVect):
-				if self.dico_donnee.get(obj['idCapteur']):
-					self.dico_donnee[obj['idCapteur']][0].append(obj['dateCreation'])
-					self.dico_donnee[obj['idCapteur']][1].append( obj['X'])
-				else:
-					self.dico_donnee[obj['idCapteur']] = [[obj['dateCreation']], [obj['X']]]
+				if obj.idCapteur in (21, 24):
+					self.graphs.add_data('3D', obj.idCapteur, [obj.X, 0], [obj.Y, 0], [obj.Z, 0], limit=2)
+
+					off = 1.2
+					self.graphs.add_data('3D', 1, *[[-off]]*3, limit=1) # prevent auto-resize
+					self.graphs.add_data('3D', 2, *[[off]]*3, limit=1)
+				# if self.dico_donnee.get(obj.idCapteur):
+				# 	self.dico_donnee[obj.idCapteur][0].append(obj.dateCreation)
+				# 	self.dico_donnee[obj.idCapteur][1].append( obj.X)
+				# else:
+				# 	self.dico_donnee[obj.idCapteur] = [[obj.dateCreation], [obj.X]]
+		self.graphs.update('line')
+		self.graphs.update('3D')
+		self.graphs.plot()
 
 if __name__ == "__main__":
 	fen = MainWin(19) #1 admin, #10 test #19 test_teacher #20 test_eleve

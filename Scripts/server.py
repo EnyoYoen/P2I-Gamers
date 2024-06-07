@@ -30,29 +30,33 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 
 		self.send_data(post_body)
 
+		start = time.time()
+		idPaquet = 1
+		try:
+			idDonneeMouvement = self.event.idMvt
+		except AttributeError:
+			idDonneeMouvement = -1
+
+		simples, vects = [], []
+		for packet in post_body:
+			date = packet['time']
+
+			if packet['type'] == 'simple':
+				for idCapteur, value in packet['data'].items():
+					simples.append((int(idCapteur)+1, idDonneeMouvement, date, value))
+					mesure = MesureSimple.from_raw((int(idCapteur)+1, idDonneeMouvement, date, value))
+
+					self.que.put(mesure)
+
+			elif packet['type'] == 'vector':
+				for idCapteur, vec in packet['data'].items():
+					vects.append((int(idCapteur)+1, idDonneeMouvement, date, *vec))
+					mesure = MesureVect.from_raw((int(idCapteur)+1, idDonneeMouvement, date, *vec, idPaquet))
+
+					self.que.put(mesure)
+
 		if self.event.is_set():
 			print(f'Saving 1 packet, size: {len(post_body)}')
-			start = time.time()
-			idPaquet = 1
-			idDonneeMouvement = self.event.idMvt
-
-			simples, vects = [], []
-			for packet in post_body:
-				date = packet['time']
-
-				if packet['type'] == 'simple':
-					for idCapteur, value in packet['data'].items():
-						simples.append((int(idCapteur)+1, idDonneeMouvement, date, value))
-						mesure = MesureSimple.from_raw((int(idCapteur)+1, idDonneeMouvement, date, value))
-
-						self.que.put(mesure)
-
-				elif packet['type'] == 'vector':
-					for idCapteur, vec in packet['data'].items():
-						vects.append((int(idCapteur)+1, idDonneeMouvement, date, *vec))
-						mesure = MesureVect.from_raw((int(idCapteur)+1, idDonneeMouvement, date, *vec, idPaquet))
-
-						self.que.put(mesure)
 
 			db.add_mesures_multiples(simples, vects)
 
@@ -63,18 +67,34 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 		self.wfile.write(b'Ok')
 		# self.wfile.write(b'Hello, World!')
 
-	def send_data(self, packet, thread=False):
-		return
+	def send_data(self, packets, thread=False):
 		if not thread:
-			threading.Thread(target=self.send_data, args=(packet, True)).start()
+			threading.Thread(target=self.send_data, args=(packets, True)).start()
 			return
 
-		URL = 'http://localhost:13579/UpdatePos?data=' + json.dumps(packet)
+		out = {}
+		# for packet in packets:
+		for packet in packets[:2]:
+			if packet['type'] == 'simple':
+				for idCapteur, value in packet['data'].items():
+					if int(idCapteur) <= 4: # Only fingers
+						out[idCapteur] = [value, 0, 0]
+			elif packet['type'] == 'vector':
+				for idCapteur, vec in packet['data'].items():
+					if int(idCapteur) in (21, 24, 27):
+						out[int(idCapteur)//3 -2] = vec
+
+
+		serialized = ';'.join([','.join([str(k), *list(map(str, v))]) for k, v in out.items()])
+
+		URL = 'http://localhost:13579/data?data=' + serialized
 		# URL = "http://localhost:13579/UpdatePos?bone=1&data={%22test%22:{%22bone%22:1,%20%22rotX%22:0.5}}"
 		try:
 			requests.get(URL)
 		except requests.ConnectionError as e:
-			print('Error while sending data to renderer')
+			print('Error while sending data to renderer:', e)
+
+
 
 def run_custom_server(event, que):
 	server_address = ('', 8085)  # Use a custom port if needed

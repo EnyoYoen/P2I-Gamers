@@ -52,3 +52,4 @@ while True:
 	for d in [data, reset]:
 		send_mouvement_to_display(d)
 		time.sleep(2)
+
