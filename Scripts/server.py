@@ -37,14 +37,26 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 		except AttributeError:
 			idDonneeMouvement = -1
 
+		fingers_ranges = {
+			1:[0.4, 0.2],
+			2:[0.4, 0.2],
+			3:[0.4, 0.2],
+			4:[0.4, 0.2],
+			5:[0.24, 0.17]
+		}
+
 		simples, vects = [], []
 		for packet in post_body:
 			date = packet['time']
 
 			if packet['type'] == 'simple':
 				for idCapteur, value in packet['data'].items():
-					simples.append((int(idCapteur)+1, idDonneeMouvement, date, value))
-					mesure = MesureSimple.from_raw((int(idCapteur)+1, idDonneeMouvement, date, value))
+					idCapteur = int(idCapteur)+1
+					frange = fingers_ranges[idCapteur]
+					value = value-frange[0] / (frange[1]-frange[0])
+
+					simples.append((idCapteur, idDonneeMouvement, date, value))
+					mesure = MesureSimple.from_raw((idCapteur, idDonneeMouvement, date, value))
 
 					self.que.put(mesure)
 
