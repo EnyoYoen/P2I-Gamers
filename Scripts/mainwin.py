@@ -33,6 +33,13 @@ class MainWin(tk.Tk, DataServer):
 		DataServer.__init__(self)
 		self.user = db.get_user(user_id)
 
+		self.mlp = perceptron.load_MLP()
+		self.typesCapteurs = {}
+		for type in db.list_type_capteurs():
+			self.typesCapteurs[type.idPlacement] = type
+		self.capteurs = {}
+		for capteur in db.list_capteurs():
+			self.capteurs[capteur.idCapteur] = capteur
 
 		self.title('G.M.T.')
 		# récuperation de la résolution de l'écran
@@ -336,10 +343,22 @@ class MainWin(tk.Tk, DataServer):
 		Affiche l'analyse comparative à partir de la base de donnée
 		'''
 		# à adapter avec l'apprentissage 
-		mvt_exp = db.get_mesure_vect(self.server_event.idMvt)
+		data = []
+		pression = []
+		flexion = []
+		for mesure_simple in db.get_mesure_simple(self.server_event.idMvt):
+			nom_type = self.typesCapteurs[self.capteurs[mesure_simple.idCapteur].idPlacement].type
+			if nom_type == 'Pression':
+				pression.append(mesure_simple)
+			elif nom_type == 'Flexion':
+				flexion.append(mesure_simple)
+		data.append(pression)
+		data.append(flexion)
+		data.append(db.get_mesure_vect(self.server_event.idMvt))
+
 		mvt_the = {}
-		name_predict = str(perceptron.predict(mvt_exp)) #ajouter mlp
-		for li in db.list_mouvements_info(1) :
+		name_predict = str(perceptron.predict(self.mlp, perceptron.convert_to_ts(data)))
+		for li in db.list_mouvements_info(1):
 			id = li.idMvt
 			name = li.name
 			mvt_the[name] = db.get_mesure_vect(id) 
@@ -391,7 +410,24 @@ class MainWin(tk.Tk, DataServer):
 
 		if self.is_comparaison:
 			try:
-				nom_th = perceptron.predict(data)
+				data_mlp = []
+				pression = []
+				flexion = []
+				inertie = []
+
+				for mesure in data:
+					type = self.typesCapteurs[self.capteurs[mesure.idCapteur].idPlacement].type
+					if type == 'Pression':
+						pression.append(mesure)
+					elif type == 'Flexion':
+						flexion.append(mesure)
+					elif type == 'Inertie':
+						inertie.append(mesure)
+				data_mlp.append(pression)
+				data_mlp.append(flexion)
+				data_mlp.append(inertie)
+
+				nom_th = perceptron.predict(self.mlp, perceptron.convert_to_ts(data_mlp))
 				mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(self.server_event.idMvt)
 
 				capteurs = {}
