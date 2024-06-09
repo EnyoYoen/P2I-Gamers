@@ -77,7 +77,7 @@ class Database:
 	@Capteur.cast
 	def list_type_capteurs(self):
 		"""Renvoie la liste des types de capteurs"""
-		sql = "SELECT * FROM Typecapteur"
+		sql = "SELECT * FROM TypeCapteur"
 		return self.sql(sql)
 
 	@Utilisateur.cast

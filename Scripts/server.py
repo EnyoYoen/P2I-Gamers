@@ -8,15 +8,18 @@ import threading
 import time
 import requests
 
+from database import Database
 from secret import CALIBRATION_FILE
 from dataclass import MesureSimple, MesureVect
 
 class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
-	def __init__(self, event, que, gui_data_queue, idMvt, calibration_data, *args, **kwargs):
+	def __init__(self, db, event, que, gui_data_queue, idMvt, calibration_data, *args, **kwargs):
 		self.event = event
 		self.que = que
 		self.idMvt = idMvt
 		self.calibration_data = calibration_data
+
+		self.db = db
 
 		self.gui_data_queue = gui_data_queue
 
@@ -43,9 +46,12 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 		start = time.time()
 		idPaquet = 1
 		try:
-			idDonneeMouvement = self.idMvt
+			idDonneeMouvement = self.idMvt.value
 		except AttributeError:
-			idDonneeMouvement = -1
+			idDonneeMouvement = 1
+		except Exception:
+			# Program has ended
+			return
 
 		simples, vects = [], []
 		for packet in post_body:
@@ -85,7 +91,7 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 			# Program has ended
 			pass
 		else:
-			if is_event_set:
+			if is_event_set and idDonneeMouvement != -1:
 				print(f'Saving 1 packet, size: {len(post_body)}')
 
 				self.db.add_mesures_multiples(simples, vects)
@@ -193,6 +199,7 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 
 def run_custom_server(*args):
 	server_address = ('', 8085)  # Use a custom port if needed
+	args = [Database()] + list(args)
 	httpd = http.server.HTTPServer(server_address, partial(CustomRequestHandler, *args))
 	print('Starting HTTP server...')
 	httpd.serve_forever()
@@ -232,7 +239,6 @@ if __name__ == '__main__':
 	# run_custom_server(event)
 	serv = DataServer()
 	serv.server_event.set()
-	serv.server_event.idMvt = 2
 	moy = serv.dataQueue.get()
 
 	while True:

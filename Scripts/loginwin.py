@@ -25,6 +25,8 @@ class LoginWin(tk.Tk, PasswordManager):
 
         self.username_entry = tk.Entry(self)
         self.username_entry.grid(column=1, row=0, sticky=tk.E, padx=5, pady=5)
+        self.username_entry.focus_set()
+        self.username_entry.bind('<Return>', self.return_username)
 
         # password
         self.password_label = tk.Label(self, text="Mot de passe:")
@@ -32,6 +34,7 @@ class LoginWin(tk.Tk, PasswordManager):
 
         self.password_entry = tk.Entry(self, show="*")
         self.password_entry.grid(column=1, row=1, sticky=tk.E, padx=5, pady=5)
+        self.password_entry.bind('<Return>', self.return_password)
 
         # login button
         self.login_button = tk.Button(self, text="Connexion")
@@ -73,6 +76,12 @@ class LoginWin(tk.Tk, PasswordManager):
         """
         self.queue.insert(0, "register")
         self.destroy()
+
+    def return_username(self, event) :
+        self.password_entry.focus_set()
+
+    def return_password(self, event) :
+        self.login('<Return>')
 
 if __name__ == "__main__":
     win = LoginWin([])
