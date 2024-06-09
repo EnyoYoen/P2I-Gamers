@@ -546,6 +546,7 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 							pass
 							label = None
 
+						print(f'{label=}')
 						if label is not None:
 							mouvements = db.list_mouvements_info(1)
 
