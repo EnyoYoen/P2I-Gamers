@@ -40,6 +40,15 @@ class MainWin():
 		self.user = self.db.get_user(user_id)
 		self.root = tk.Tk()
 		
+		self.mlp = perceptron.load_MLP()
+		self.typesCapteurs = {}
+
+		for type in self.db.list_type_capteurs():
+			self.typesCapteurs[type.idPlacement] = type
+		self.capteurs = {}
+		for capteur in self.db.list_capteurs():
+			self.capteurs[capteur.idCapteur] = capteur
+   
 		self.root.title('G.M.T.')
 		# récuperation de la résolution de l'écran
 		screen_width = self.root.winfo_screenwidth()
@@ -333,7 +342,7 @@ class MainWin():
 		Affiche l'analyse comparative à partir de la base de donnée
 		'''
 		# à adapter avec l'apprentissage 
-		mvt_exp = self.db.get_mesure_vect(self.idMvt)
+		mvt_exp = self.db.get_mesure_vect(self.server_event.idMvt)
 		mvt_the = {}
 		name_predict = str(perceptron.predict(mvt_exp)) #ajouter mlp
 		for li in self.db.list_mouvements_info(1) :
@@ -506,7 +515,10 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 				add_data_sensors(self, data)
 			# self.donne_recup_william(data)
 
-			if self.running and self.is_comparaison:
+			if not self.running:
+				return
+
+			if self.is_comparaison:
 				try:
 					# nom_th = perceptron.predict(data)
 					mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(310)
@@ -546,7 +558,7 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 
 				except Exception as e:
 					print(f'Erreur pendant la comparaison: {e}')
-			
+				
 		except EOFError:
 			return # Program is shutting down
 		except BrokenPipeError:

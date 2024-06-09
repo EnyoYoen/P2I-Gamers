@@ -73,6 +73,12 @@ class Database:
 		"""Renvoie le capteur correspondant à idCapteur"""
 		sql = "SELECT c.*, tc.nomCapteur, tc.fabricant, tc.TypeCapteur FROM Capteurs c, TypeCapteur tc WHERE idCapteur=%s and c.idPlacement=tc.idPlacement"
 		return self.sql(sql, [idCapteur])[0]
+	
+	@Capteur.cast
+	def list_type_capteurs(self):
+		"""Renvoie la liste des types de capteurs"""
+		sql = "SELECT * FROM Typecapteur"
+		return self.sql(sql)
 
 	@Utilisateur.cast
 	def list_users(self):
