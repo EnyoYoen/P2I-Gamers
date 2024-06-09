@@ -507,7 +507,7 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 				# if len(data) >= 100:
 				# 	break
 
-			if len(data) > 500:
+			if len(data) > 100:
 				print('TOO MUCH DATA, dropping everything', len(data), flush=True)
 				continue
 

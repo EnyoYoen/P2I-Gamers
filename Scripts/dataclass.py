@@ -66,7 +66,7 @@ class MesureVect(DataClass):
 class Capteur(DataClass):
 	KEYS = [
 		'idCapteur',
-		'idPLacement',
+		'idPlacement',
 		'idDispositif',
 		'date_installation',
 		'date_desinstallation'
