@@ -21,9 +21,9 @@ class calibration_popup(tk.Toplevel) :
         else :
             self.destroy()
     def center_window(self):
-        self.update_idletasks()
-        width = self.winfo_width()
-        height = self.winfo_height()
-        x = (self.winfo_screenwidth() // 2) - (width // 2)
-        y = (self.winfo_screenheight() // 2) - (height // 2)
+        #self.update_idletasks()
+        width = 600
+        height = 100
+        x = (self.winfo_screenwidth() // 2)
+        y = (self.winfo_screenheight() // 2)
         self.geometry(f'{width}x{height}+{x}+{y}')
