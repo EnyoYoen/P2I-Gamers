@@ -520,6 +520,8 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 
 			if self.is_comparaison:
 				try:
+					data_mlp = perceptron.convert_to_sequence(data)
+					print(data_mlp)
 					# nom_th = perceptron.predict(data)
 					mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(310)
 
