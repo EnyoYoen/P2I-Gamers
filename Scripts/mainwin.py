@@ -382,7 +382,7 @@ class MainWin():
 	def update_plots(self):
 		self.root.after(100, self.update_plots)
 
-		self.precision_var.set(f'{self.precision_var_proxy} %')
+		self.precision_var.set(f'{self.precision_var_proxy.value} %')
 
 		while not self.graph_queue.empty():
 			packet = self.graph_queue.get()
@@ -474,7 +474,7 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 
 		manager = multiprocessing.Manager()
 		self.comp_ns = manager.Namespace()
-		self.comp_ns.precision_var = 0.0
+		self.comp_ns.precision_var = manager.Value('d', 0.0)
 		self.comp_ns.graph_queue = manager.Queue()
 		self.comp_ns.dataQueue = self.dataQueue
 
@@ -529,47 +529,53 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 
 			if self.running.value and self.is_comparaison.value:
 				try:
-					try:
-						label = self.factor_to_label[perceptron.predict(
-							self.mlp, 
-							perceptron.convert_to_sequence(
-								perceptron.get_mesure_list(
-									self.idMvt.value, 
-									db
-						)))]
-					except Exception as e:
-						print(f'Erreur du perceptron: {e}')
-						raise
+					USE_PERCEPTRON = False
+					if USE_PERCEPTRON:
+						try:
+							label = self.factor_to_label[perceptron.predict(
+								self.mlp, 
+								perceptron.convert_to_sequence(
+									perceptron.get_mesure_list(
+										self.idMvt.value, 
+										db
+							)))]
+						except Exception as e:
+							print(f'Erreur du perceptron: {e}')
+							raise
 
-					mouvements = db.list_mouvements_info(1)
+						mouvements = db.list_mouvements_info(1)
 
-					for mouvement in mouvements:
-						if mouvement.name == label:
-							idMvtTh = mouvement.idMvt
-							break
+						for mouvement in mouvements:
+							if mouvement.name == label:
+								idMvtTh = mouvement.idMvt
+								break
+						else:
+							idMvtTh = None
 					else:
-						idMvtTh = None
+						idMvtTh = 329
 
 					if idMvtTh is not None:
 						mvmt_info_exp, mesures_simple_exp, mesures_vect_exp = db.get_mouvement(self.idMvt.value)
 
-						try:
-							# value = cp.comparaison_direct(data_th, data_exp)
-							value = cp.comparaison_direct2(mesures_simple_exp, mesures_vect_exp, idMvtTh)
+						if len(mesures_simple_exp) != 0 and len(mesures_vect_exp) != 0:
 
-							print(f'{value=}')
-							self.precision_var = value
-						except Exception as e:
-							print(f'Erreur pendant la comparaison: {e}')
-							raise
+							try:
+								# value = cp.comparaison_direct(data_th, data_exp)
+								value = cp.comparaison_direct2(mesures_simple_exp, mesures_vect_exp, idMvtTh)
 
-					packet = []
-					packet.append(('line2', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
-					packet.append(('line2', 2, ([datetime.datetime.now().timestamp()], [100]), 1))
-					packet.append(('line2', 3, ([datetime.datetime.now().timestamp()], [0]), 1))
-					packet.append(('boxplot', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
+								print(f'{value=}')
+								self.precision_var.set(value)
+							except Exception as e:
+								print(f'Erreur pendant la comparaison: {e}')
+								pass
 
-					self.graph_queue.put(packet)
+							packet = []
+							packet.append(('line2', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
+							packet.append(('line2', 2, ([datetime.datetime.now().timestamp()], [100]), 1))
+							packet.append(('line2', 3, ([datetime.datetime.now().timestamp()], [0]), 1))
+							packet.append(('boxplot', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
+
+							self.graph_queue.put(packet)
 	
 					# self.graphs.add_data('line2', 1, [datetime.datetime.now().timestamp()], [value], value_limit=20)
 					# self.graphs.add_data('line2', 2, [datetime.datetime.now().timestamp()], [100], limit=1) # Prevent resize
