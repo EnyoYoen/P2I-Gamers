@@ -21,6 +21,7 @@ import perceptron
 import comparaison as cp
 from server import DataServer
 import namewin
+import calibration_popup
 
 # from tkinter import font
 # from tkinter import messagebox
@@ -407,6 +408,7 @@ class MainWin():
 
 		print('Calibration started')
 		print('Please move all fingers to the maximum and minimum position for 5 seconds')
+		calibration_popup.calibration_popup()
 
 		self.root.after(5000, self.finish_calibration)
 
