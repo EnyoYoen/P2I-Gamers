@@ -49,13 +49,13 @@ class Database:
 	@MesureSimple.cast
 	def get_mesure_simple(self, idDonneeMouvement):
 		"""Renvoie la liste de mesures simples correspondant au mouvement idDonneeMouvement"""
-		sql = "SELECT * FROM MesuresSimples WHERE idDonneeMouvement = %s"
+		sql = "SELECT idCapteur, idDonneeMouvement, date, valeur FROM MesuresSimples WHERE idDonneeMouvement = %s"
 		return self.sql(sql, [idDonneeMouvement])
 
 	@MesureVect.cast
 	def get_mesure_vect(self, idDonneeMouvement):
 		"""Renvoie la liste de mesures vectorielles correspondant au mouvement idDonneeMouvement"""
-		sql = "SELECT * FROM MesuresVect WHERE idDonneeMouvement = %s"
+		sql = "SELECT idCapteur, idDonneeMouvement, date, x, y, z FROM MesuresVect WHERE idDonneeMouvement = %s"
 		return self.sql(sql, [idDonneeMouvement])
 
 	def get_mouvement(self, idDonneeMouvement):
