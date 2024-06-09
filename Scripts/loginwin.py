@@ -3,12 +3,13 @@ Affichage de la fênetre de connexion
 """
 import tkinter as tk
 from tkinter.messagebox import showerror
-from password_manager import verify_user
+from password_manager import PasswordManager
 
-class LoginWin(tk.Tk):
+class LoginWin(tk.Tk, PasswordManager):
 
     def __init__(self, queue: list) -> None:
         super().__init__()
+        PasswordManager.__init__(self)
         self.queue = queue
         self.user_id = None
         self.title('G.M.T. Connexion')
@@ -54,7 +55,7 @@ class LoginWin(tk.Tk):
         password = str(self.password_entry.get()).strip()
         
         try:
-            self.user_id = verify_user(user, password)
+            self.user_id = self.verify_user(user, password)
             good = self.user_id is not None
         except:
             good = False

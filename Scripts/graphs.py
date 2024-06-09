@@ -59,7 +59,7 @@ class SubGraph:
 		self.data = []
 		self.ax = fig.add_subplot(pos, **self.SUBPLOT_ARGS|kwargs)
 		
-	def add_data(self, index, *data, limit=None, value_limit=None, **kwargs):
+	def add_data(self, index, data, limit=None, value_limit=None, **kwargs):
 		while len(self.data) <= index:
 			self.data.append([])
 

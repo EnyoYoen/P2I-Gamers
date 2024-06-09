@@ -2,53 +2,68 @@
 Affichage de la Fenêtre Principale
 '''
 import datetime 
+import json
+import math
+import multiprocessing
+import os
 import queue
+import threading
+import time
 import tkinter as tk
-from tkinter import messagebox
+import itertools
+
+from secret import CALIBRATION_FILE
+
 from graphs import *
 from dataclass import *
-from database import db
+from database import Database
 import perceptron
 import comparaison as cp
 from server import DataServer
 import namewin
-from tkinter import font
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.use("TkAgg")
-from matplotlib.figure import Figure
-import matplotlib.animation as animation
-from matplotlib import style
-style.use('ggplot')
-import itertools
+
+# from tkinter import font
+# from tkinter import messagebox
+# import matplotlib
+# matplotlib.use("TkAgg")
+# from matplotlib import style
+# style.use('ggplot')
 
 mvt_exp = MesureVect.from_raw_list([(0,0,1,2,3,1),(1,1,4,5,6,2),(2,2,7,8,9,3)])
 data_th = {"aurevoir":MesureVect.from_raw_list([(0,3,10,9,8,1),(0,4,7,6,5,1.5),(0,5,4,3,2,2),(0,6,1,1,1,2.6),(0,7,1,2,3,3)]),
 					 "coucou":MesureVect.from_raw_list([(0,13,1,2,3,1),(0,12,4,5,6,1.5),(0,11,7,8,9,2),(0,10,1,1,1,2.6),(0,9,1,2,3,3),(0,8,0,0,0,4)])}
 
-class MainWin(tk.Tk, DataServer):
+class MainWin():
 	def __init__(self, user_id):
 		super().__init__()
-		DataServer.__init__(self)
-		# self.user = db.get_user(user_id)
-
-
-		self.title('G.M.T.')
+		self.db = Database()
+		self.user = self.db.get_user(user_id)
+		self.root = tk.Tk()
+		
+		self.root.title('G.M.T.')
 		# récuperation de la résolution de l'écran
-		screen_width = self.winfo_screenwidth()
-		screen_height = self.winfo_screenheight() - 100
+		screen_width = self.root.winfo_screenwidth()
+		screen_height = self.root.winfo_screenheight() - 100
 
-		self.geometry(f"{screen_width}x{screen_height}")
+		self.root.geometry(f"{screen_width}x{screen_height}")
+
+		self.is_calibrating = False
+		self.is_comparaison = True
 
 		# self.f = Figure(figsize=(2,2), dpi=100)
 		# self.a = self.f.add_subplot(111)
 
 		self.creer_widgets()
-		# self.anim = animation.FuncAnimation(self.f, self.animate, interval=1000, cache_frame_data=False)
-		self.get_current_comp()
-		# self.matplotlib_integration_comparison_update()
 
+
+		self.data_server = DataServer()
+		for k in ('server_event', 'dataQueue', 'gui_data_queue', 'idMvt', 'calibration_data'):
+			setattr(self, k, getattr(self.data_server, k))
+
+		self.graph_queue, self.precision_var_proxy = get_current_comp(self)
+		self.update_plots()
+
+		self.root.mainloop()
 
 	def creer_widgets(self):
 		"""
@@ -56,20 +71,21 @@ class MainWin(tk.Tk, DataServer):
 		"""
 		# Configuration des colonnes/lignes pour qu'elles se redimensionnent
 		for i in range(0,8) :
-			self.columnconfigure(i, weight=1)
-			self.rowconfigure(i, weight=1)
+			self.root.columnconfigure(i, weight=1)
+			self.root.rowconfigure(i, weight=1)
 
 		#Label tout en haut
-		self.title_font = font.Font(family="Bahnschrift SemiBold Condensed", size=16)
-		self.label = tk.Label(self, text="ENTRAINEMENT G.M.T", font=self.title_font, fg='#93B2DB')
-		self.rowconfigure(0, weight=0)
-		self.columnconfigure(0, weight=0)
-		self.columnconfigure(1, weight=0)
+		self.title_font = tk.font.Font(family="Bahnschrift SemiBold Condensed", size=16)
+		self.label = tk.Label(self.root, text="ENTRAINEMENT G.M.T", font=self.title_font, fg='#93B2DB')
+
+		self.root.rowconfigure(0, weight=0) # ???
+		self.root.columnconfigure(0, weight=0)
+		self.root.columnconfigure(1, weight=0)
+
 		self.label.grid(row=0, column=0, columnspan=8)
-		self.is_comparaison = True
 
 		#Frame historique
-		self.frame_historique = tk.Frame(self)
+		self.frame_historique = tk.Frame(self.root)
 		self.frame_historique.columnconfigure(0, weight = 1)
 		self.frame_historique.rowconfigure(0, weight=1)
 
@@ -84,7 +100,7 @@ class MainWin(tk.Tk, DataServer):
 		self.scrollbar.config(command = self.list_historique.yview )
 
 		#Frame pré-enregistrement
-		self.frame_pre_enregistrement = tk.Frame(self)
+		self.frame_pre_enregistrement = tk.Frame(self.root)
 
 		#Scrollbar a droite de la liste pour le pré-enregistrement
 		self.scrollbar_pre_enregistrement = tk.Scrollbar(self.frame_pre_enregistrement)
@@ -95,12 +111,13 @@ class MainWin(tk.Tk, DataServer):
 		self.list_pre_enregistrement = tk.Listbox(self.frame_pre_enregistrement, yscrollcommand=self.scrollbar_pre_enregistrement.set)
 		self.list_pre_enregistrement.grid(column=0, row=0, sticky='nesw')
 		
-		self.data_list_historique = db.list_mouvements_info(1)
-		# self.data_list_historique = db.list_mouvements_info(self.user.idUtilisateur)
+		# TODO - C'est pas bien ca
+		self.data_list_historique = self.db.list_mouvements_info(1)
+		# self.data_list_historique = self.db.list_mouvements_info(self.user.idUtilisateur)
 		for i in range(len(self.data_list_historique)):
 			self.list_historique.insert(tk.END, str(i+1) + ' - ' + str(self.data_list_historique[i].dateCreation) ) 
 
-		self.data_list_pre_enregistrement = db.list_mouvements_info(1) #id 1 pour les pre-enregistrement
+		self.data_list_pre_enregistrement = self.db.list_mouvements_info(1) #id 1 pour les pre-enregistrement
 		for i in range(len(self.data_list_pre_enregistrement)):
 			self.list_pre_enregistrement.insert(tk.END, str(i+1) + ' - ' + str(self.data_list_pre_enregistrement[i].name) )
 
@@ -112,20 +129,20 @@ class MainWin(tk.Tk, DataServer):
 		self.frame_pre_enregistrement.rowconfigure(0, weight=1)
 
 		#police d'écriture
-		self.font = font.Font(family="Bahnschrift SemiLight SemiCondensed", size=8)
+		self.font = tk.font.Font(family="Bahnschrift SemiLight SemiCondensed", size=8)
 
 		#Bouton pré-enregistrement
-		self.button_preenregistrement = tk.Button(self, text="Enregistrement", font=self.font, padx= 10, fg='#353535', bg='#ECFCCA')
+		self.button_preenregistrement = tk.Button(self.root, text="Enregistrement", font=self.font, padx= 10, fg='#353535', bg='#ECFCCA')
 		self.button_preenregistrement.bind('<Button-1>', self.afficher_preenregistrement)
 		self.button_preenregistrement.grid(column=0, row=0, sticky='nesw')
 		
 		#Bouton historique
-		self.button_historique = tk.Button(self, text="Historique", font=self.font, padx= 20, fg='#353535', bg='#FCEECA')
+		self.button_historique = tk.Button(self.root, text="Historique", font=self.font, padx= 20, fg='#353535', bg='#FCEECA')
 		self.button_historique.bind('<Button-1>', self.afficher_historique)
 		self.button_historique.grid(column=1, row=0, sticky="nesw")
 		
 		#cadre visualisation
-		self.canevas = tk.Canvas(self, background='lightblue')
+		self.canevas = tk.Canvas(self.root, background='lightblue')
 		self.canevas.grid(column=2,columnspan=5,row=1,rowspan= 10, sticky='nesw')
 		
 		#ajustement de la taille relative
@@ -135,13 +152,15 @@ class MainWin(tk.Tk, DataServer):
 		#gestion enregistrement
 		self.start_time = 0
 		self.running = False
-		self.chrono = tk.Label(text='00:00:00', fg='#444445')
+		self.chrono = tk.Label(self.root, text='00:00:00', fg='#444445')
 		self.chrono.grid(row=13, column=4)
 
-		self.label_enregistrement = tk.Label(text="Commencer l'enregistrement", fg='#444445')
+		self.label_enregistrement = tk.Label(self.root, text="Commencer l'enregistrement", fg='#444445')
 		self.label_enregistrement.grid(row=12, column=4)
+
+
 		self.precision_var = tk.StringVar()
-		self.label_pourcentage = tk.Label(textvariable=self.precision_var, fg='#444445')
+		self.label_pourcentage = tk.Label(self.root, textvariable=self.precision_var, fg='#444445')
 		self.label_pourcentage.grid(row=12, column=5)
 		
 		#image bouton start
@@ -149,30 +168,29 @@ class MainWin(tk.Tk, DataServer):
 		self.img_pause = tk.PhotoImage(file='Scripts/images/pause.png')
 		self.img_stop = tk.PhotoImage(file='Scripts/images/stop.png')
 		
-		self.bouton_start = tk.Button(self, image=self.img_start)
+		self.bouton_start = tk.Button(self.root, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
 		self.bouton_start.grid(row=11, column=4)
 		
-		self.bouton_restart = tk.Button(self, image=self.img_start)
+		self.bouton_restart = tk.Button(self.root, image=self.img_start)
 
-		# graphe 
-		# self.graph()
-		# self.canvas.get_tk_widget().grid(row=1, column=7, rowspan=5, columnspan=1, sticky='nesw')
-		
 		#Button 
-		self.bouton_desac_compa = tk.Button(self, text='Désactiver comparaison')
+		self.bouton_desac_compa = tk.Button(self.root, text='Désactiver comparaison')
 		self.bouton_desac_compa.bind('<Button-1>', self.off_compa)
 		self.bouton_desac_compa.grid(row=11, column=7)
 
-		self.bouton_act_compa = tk.Button(self, text='Activer comparaison')
+		self.bouton_act_compa = tk.Button(self.root, text='Activer comparaison')
 		self.bouton_act_compa.bind('<Button-1>', self.on_compa)
 
+		#Button 
+		self.bouton_calibration = tk.Button(self.root, text='Calibrage')
+		self.bouton_calibration.bind('<Button-1>', self.start_calibration)
+		self.bouton_calibration.grid(row=12, column=7)
+
 		# #Exit button
-		# self.exit_bouton = tk.Button(self, text="Quitter", command=self.destroy, fg='#444445', bg='#FFE8DF')
+		# self.exit_bouton = tk.Button(self.root, text="Quitter", command=self.root.destroy, fg='#444445', bg='#FFE8DF')
 		# self.exit_bouton.bind('<Button-1>',self.quitter)
 		# self.exit_bouton.grid(row=14, column=5)
-
-		# self.matplotlib_integration_comparison_initialisation()
 
 		# Graphs
 		
@@ -185,11 +203,10 @@ class MainWin(tk.Tk, DataServer):
 		kwargs = {
 			'3D': {'xlim': (-1, 1), 'ylim': (-1, 1), 'zlim': (-1, 1)}
 		}
-		self.graph_frame = Frame(self, bg='red')
+		self.graph_frame = Frame(self.root, bg='red')
 		self.graphs = Graphs(self.graph_frame, graphs_class, kwargs)
 		self.graph_frame.grid(row=1, column=7, rowspan=10, columnspan=1, sticky='nesw')
 
-	
 	def off_compa(self, event):
 		self.is_comparaison = False
 		self.bouton_desac_compa.grid_forget()
@@ -200,25 +217,6 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_act_compa.grid_forget()
 		self.bouton_desac_compa.grid(row=11, column=7)
 
-	def animate(self, a):
-		pullData = open('sampleText.txt','r').read()
-		dataArray = pullData.split('\n')
-
-		xar=[]
-		yar=[]
-		for eachLine in dataArray:
-			if len(eachLine)>1:
-				x,y = eachLine.split(',')
-				xar.append(int(x))
-				yar.append(int(y))
-		self.a.clear()
-		self.a.plot(xar, yar)
-
-	def graph(self):
-		self.canvas = FigureCanvasTkAgg(self.f, self)
-		self.canvas.draw()
-		# plt.show()
-	
 	def quitter(self, event):
 		"""
 		Quitter l'application
@@ -231,8 +229,8 @@ class MainWin(tk.Tk, DataServer):
 		"""
 		self.running = True
 		now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-		idMvt = db.add_movement_data(self.user.idUtilisateur, 1, now, None)
-		self.server_event.idMvt = idMvt
+		idMvt = self.db.add_movement_data(self.user.idUtilisateur, 1, now, None)
+		self.idMvt = idMvt
 		self.server_event.set()
 
 		while True: # Clear the queue
@@ -241,17 +239,16 @@ class MainWin(tk.Tk, DataServer):
 			except queue.Empty:
 				break
 
-		self.bouton_pause = tk.Button(self, image=self.img_pause)
+		self.bouton_pause = tk.Button(self.root, image=self.img_pause)
 		self.bouton_pause.bind('<Button-1>', self.pause)
 		self.bouton_pause.grid(row=11, column=3)
 		
-		self.bouton_arret = tk.Button(self, image=self.img_stop)
+		self.bouton_arret = tk.Button(self.root, image=self.img_stop)
 		self.bouton_arret.bind( '<Button-1>', self.arret)
 		self.bouton_arret.grid(row=11, column=5)
 		
 		self.bouton_start.destroy()
 		self.start_time = datetime.datetime.now()
-		# self.matplotlib_integration_comparison_update()
 		self.update_time()
 
 	def update_time(self):
@@ -262,7 +259,7 @@ class MainWin(tk.Tk, DataServer):
 			d = datetime.datetime.now() - self.start_time
 			txt = (datetime.datetime.fromtimestamp(d.total_seconds()) - datetime.timedelta(hours=1)).strftime('%H:%M:%S')
 			self.chrono.config(text=txt)
-			self.after(1000, self.update_time)
+			self.root.after(1000, self.update_time)
 
 	def pause(self, event) :
 		"""
@@ -272,7 +269,7 @@ class MainWin(tk.Tk, DataServer):
 		self.server_event.clear()
 
 		self.bouton_pause.destroy()
-		self.bouton_restart = tk.Button(self, image=self.img_start)
+		self.bouton_restart = tk.Button(self.root, image=self.img_start)
 		self.bouton_restart.bind('<Button-1>', self.restart)
 		self.bouton_restart.grid(row=11, column=3)
 
@@ -285,12 +282,11 @@ class MainWin(tk.Tk, DataServer):
 
 		self.bouton_restart.destroy()
 
-		self.bouton_pause = tk.Button(self, image=self.img_pause)
+		self.bouton_pause = tk.Button(self.root, image=self.img_pause)
 		self.bouton_pause.bind('<Button-1>', self.pause)
 		self.bouton_pause.grid(row=11, column=3)
-		
+
 		self.update_time()
-		# self.matplotlib_integration_comparison_update()
 
 	def arret(self, event) :
 		"""
@@ -304,7 +300,7 @@ class MainWin(tk.Tk, DataServer):
 		self.bouton_arret.destroy()
 		self.bouton_restart.destroy()
 		self.bouton_pause.destroy()
-		self.bouton_start = tk.Button(self, image=self.img_start)
+		self.bouton_start = tk.Button(self.root, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
 		self.bouton_start.grid(row=11, column=4)
 		
@@ -319,8 +315,8 @@ class MainWin(tk.Tk, DataServer):
 		"""
 
 		if not bool(self.user.eleve):
-			self.choix_sauvegarde = messagebox.askquestion(message='Voulez-vous sauvegarder votre enregistrement ?', type='yesno')
-			if self.choix_sauvegarde == messagebox.YES:
+			self.choix_sauvegarde = tk.messagebox.askquestion(message='Voulez-vous sauvegarder votre enregistrement ?', type='yesno')
+			if self.choix_sauvegarde == tk.messagebox.YES:
 				self.sauvegarde_enregistrement()
 				histo = False
 			else:
@@ -329,7 +325,7 @@ class MainWin(tk.Tk, DataServer):
 			histo = True
 		
 		if histo:
-			historique = db.list_mouvements_info(self.user.idUtilisateur)  #Moyen opti :/
+			historique = self.db.list_mouvements_info(self.user.idUtilisateur)  #Moyen opti :/
 			self.list_historique.insert(tk.END, str(len(historique)) + ' - ' + str(historique[-1].dateCreation) ) 
 
 	def compare_message(self) :
@@ -337,15 +333,15 @@ class MainWin(tk.Tk, DataServer):
 		Affiche l'analyse comparative à partir de la base de donnée
 		'''
 		# à adapter avec l'apprentissage 
-		mvt_exp = db.get_mesure_vect(self.server_event.idMvt)
+		mvt_exp = self.db.get_mesure_vect(self.idMvt)
 		mvt_the = {}
 		name_predict = str(perceptron.predict(mvt_exp)) #ajouter mlp
-		for li in db.list_mouvements_info(1) :
+		for li in self.db.list_mouvements_info(1) :
 			id = li.idMvt
 			name = li.name
-			mvt_the[name] = db.get_mesure_vect(id) 
+			mvt_the[name] = self.db.get_mesure_vect(id) 
 		text = cp.comparaison_total(name_predict, mvt_the, mvt_exp) 
-		self.resultat = messagebox.showinfo(title='Info', message=text)
+		self.resultat = tk.messagebox.showinfo(title='Info', message=text)
 
 	def afficher_historique(self, event):
 		"""
@@ -365,133 +361,236 @@ class MainWin(tk.Tk, DataServer):
 
 		def callback(nom):
 			if nom:
-				idmvt = self.server_event.idMvt 
-				db.rename_donnees(idmvt,nom)
-				enregistrement = db.list_mouvements_info(1) #id 1 pour les pre-enregistrement
+				idmvt = self.idMvt 
+				self.db.rename_donnees(idmvt,nom)
+				enregistrement = self.db.list_mouvements_info(1) #id 1 pour les pre-enregistrement
 				self.list_pre_enregistrement.insert(tk.END, str(len(enregistrement)) + ' - ' + str(enregistrement[-1].name) )
 
 		namewin.NameWin(callback)
 
-	def get_current_comp(self):
-		self.after(100, self.get_current_comp)
+	def update_plots(self):
+		self.root.after(100, self.update_plots)
 
-		data = []
-		
-		while True: # Get all data from queue
+		self.precision_var.set(f'{self.precision_var_proxy} %')
+
+		while not self.graph_queue.empty():
+			data = self.graph_queue.get()
+			if data[0] is None and data[1] == 'UPDATE':
+				self.graphs.update(data[2])
+			else:
+				self.graphs.add_data(*data)
+
+		self.graphs.plot()
+
+	def start_calibration(self, *args):
+		if os.path.exists(CALIBRATION_FILE):
+			os.remove(CALIBRATION_FILE)
+
+		self.is_calibrating = True
+		self.calibration_data = None
+
+		# Empty data queue
+		while True:
 			try:
-				data.append(self.dataQueue.get_nowait())
+				self.dataQueue.get_nowait()
 			except queue.Empty:
 				break
 
-		if data:
-			self.add_data_sensors(data)
-		# self.donne_recup_william(data)
+		print('Calibration started')
+		print('Please move all fingers to the maximum and minimum position for 5 seconds')
 
-		if not self.running:
+		self.root.after(5000, self.finish_calibration)
+
+	def finish_calibration(self):
+		def iterator():
+			while True: # Get all data from queue
+				try:
+					yield self.dataQueue.get_nowait()
+				except queue.Empty:
+					break
+
+		calibration_data = {}
+
+		for mesure in iterator():
+			if isinstance(mesure, MesureSimple):
+				if mesure.idCapteur < 5:
+					continue
+
+				ind = mesure.idCapteur
+				val = mesure.valeur
+
+				if ind not in calibration_data:
+					calibration_data[ind] = [-math.inf, math.inf]
+
+				if val > calibration_data[ind][0]:
+					calibration_data[ind][0] = val
+				if val < calibration_data[ind][1]:
+					calibration_data[ind][1] = val
+
+			elif isinstance(mesure, MesureVect):
+				ind = mesure.idCapteur
+				vec = mesure.X, mesure.Y, mesure.Z
+
+				if ind not in calibration_data:
+					calibration_data[ind] = [[mesure.X], [mesure.Y], [mesure.Z]]
+				else:
+					for i, v in enumerate(vec):
+						calibration_data[ind][i].append(v)
+
+		for ind, data in calibration_data.items():
+			if 11 <= ind:
+				vec = [sum(calibration_data[ind][i]) / len(calibration_data[ind][i]) for i in range(3)]
+				teta = math.atan(vec[1] / vec[0])
+				phi = math.acos(vec[2] / (vec[0]**2 + vec[1]**2 + vec[2]**2)**0.5) 
+
+				calibration_data[ind] = [teta, phi]
+
+		with open(CALIBRATION_FILE, 'w') as f:
+			json.dump(calibration_data, f)
+		
+		self.calibration_data = calibration_data
+		self.is_calibrating = False
+
+		print('Calibration complete')
+
+
+# Multiprocessing functions
+def get_current_comp(self, thread=False): # TODO - Put this in a different process
+	# /!\ Ici, self est juste la reference a l'objet, ce n'est pas une methode!
+	if not thread:
+		# self.update_plots()
+		# threading.Thread(target=self.get_current_comp, args=(True,), daemon=True).start()
+
+		manager = multiprocessing.Manager()
+		self.comp_ns = manager.Namespace()
+		self.comp_ns.precision_var = 0.0
+		self.comp_ns.graph_queue = manager.Queue()
+
+		for k in ('running', 'is_comparaison', 'is_calibrating', 'dataQueue'):
+			setattr(self.comp_ns, k, getattr(self, k)) # TODO - Graphs proxy
+
+		multiprocessing.Process(target=get_current_comp, args=(self.comp_ns, True,), daemon=True).start()
+		return self.comp_ns.graph_queue, self.comp_ns.precision_var
+
+	db = Database()
+
+	while True: # Clear all data from queue -> because otherwise we jsut spend way too long processing old data
+		try:
+			self.dataQueue.get_nowait()
+		except queue.Empty:
+			break
+
+	while True:
+
+		try:
+			if self.is_calibrating:
+				# Don't take data during calibration
+				time.sleep(0.5)
+				continue
+
+			data = [self.dataQueue.get()]
+			
+			while True: # Get all data from queue
+				try:
+					data.append(self.dataQueue.get_nowait())
+				except queue.Empty:
+					break
+				# if len(data) >= 100:
+				# 	break
+
+			if len(data) > 500:
+				print('TOO MUCH DATA, dropping everything', len(data), flush=True)
+				continue
+
+			if data:
+				add_data_sensors(self, data)
+			# self.donne_recup_william(data)
+
+			if self.running and self.is_comparaison:
+				try:
+					# nom_th = perceptron.predict(data)
+					mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(310)
+
+					capteurs = {}
+
+					data_th = {}
+					data_exp = {}
+					for mesure_cat, mesures in [(data_exp, data), (data_th, itertools.chain(mesures_vect, mesures_simple))]:
+						for mesure in mesures:
+							idCapteur = mesure.idCapteur
+							if idCapteur not in capteurs:
+								capteur = db.get_capteur(idCapteur)
+								capteurs[idCapteur] = capteur.type
+
+								cat = capteurs[idCapteur]
+								if cat not in data_exp:
+									data_exp[cat] = []
+
+								mesure_cat[cat].append(mesure)
+
+					value = cp.comparaison_direct(data_th, data_exp)
+
+					print(f'{value=}')
+					self.precision_var = value
+		
+					self.graph_queue.put(('line2', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
+					self.graph_queue.put(('line2', 2, ([datetime.datetime.now().timestamp()], [100]), 1))
+					self.graph_queue.put(('line2', 3, ([datetime.datetime.now().timestamp()], [0]), 1))
+					self.graph_queue.put(('boxplot', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
+	
+					# self.graphs.add_data('line2', 1, [datetime.datetime.now().timestamp()], [value], value_limit=20)
+					# self.graphs.add_data('line2', 2, [datetime.datetime.now().timestamp()], [100], limit=1) # Prevent resize
+					# self.graphs.add_data('line2', 3, [datetime.datetime.now().timestamp()], [0], limit=1)
+
+					# self.graphs.add_data('boxplot', 1, [datetime.datetime.now().timestamp()], [value], value_limit=20)
+
+				except Exception as e:
+					print(f'Erreur pendant la comparaison: {e}')
+			
+		except EOFError:
+			return # Program is shutting down
+		except BrokenPipeError:
+			return # Same
+		except multiprocessing.managers.RemoteError:
+			return # Same
+
+def add_data_sensors(self, liste:list):
+	convert_date = lambda i: datetime.datetime.strptime(i, '%Y-%m-%d %H:%M:%S.%f').timestamp()
+	for obj in liste:
+		try:
+			if isinstance(obj, MesureSimple):
+				# if obj.idCapteur < 6: continue
+				now = convert_date(obj.dateCreation)
+				# self.graphs.add_data('line', obj.idCapteur, [now], [obj.valeur], value_limit=now-20) # last 20 sec
+				self.graph_queue.put(('line', obj.idCapteur, ([now], [obj.valeur]), None, now-20))
+
+				off = 1
+				self.graph_queue.put(('line', 11, ([now], [0]), 1)) # prevent auto-resize
+				self.graph_queue.put(('line', 12, ([now], [off]), 1))
+
+				# self.graphs.add_data('line', 11, [now], [0], limit=1) # prevent auto-resize
+				# self.graphs.add_data('line', 12, [now], [off], limit=1)
+
+			if isinstance(obj, MesureVect):
+				if obj.idCapteur >= 17 and obj.idCapteur%3==2:
+					# self.graphs.add_data('3D', obj.idCapteur, [obj.X, 0], [obj.Y, 0], [obj.Z, 0], limit=2)
+					self.graph_queue.put(('3D', obj.idCapteur, ([obj.X, 0], [obj.Y, 0], [obj.Z, 0]), 2))
+
+
+					off = 1
+					# self.graphs.add_data('3D', 1, *[[-off]]*3, limit=1) # prevent auto-resize
+					# self.graphs.add_data('3D', 2, *[[off]]*3, limit=1)
+					self.graph_queue.put(('3D', 1, [[-off]]*3, 1)) # prevent auto-resize
+					self.graph_queue.put(('3D', 2, [[off]]*3, 1))
+		except multiprocessing.managers.RemoteError:
+			# Program has ended
 			return
 
-		if self.is_comparaison:
-			try:
-				# nom_th = perceptron.predict(data)
-				mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(310)
-
-				capteurs = {}
-
-				data_th = {}
-				data_exp = {}
-				for mesure_cat, mesures in [(data_exp, data), (data_th, itertools.chain(mesures_vect, mesures_simple))]:
-					for mesure in mesures:
-						idCapteur = mesure.idCapteur
-						if idCapteur not in capteurs:
-							capteur = db.get_capteur(idCapteur)
-							capteurs[idCapteur] = capteur.type
-
-							cat = capteurs[idCapteur]
-							if cat not in data_exp:
-								data_exp[cat] = []
-
-							mesure_cat[cat].append(mesure)
-
-				value = cp.comparaison_direct(data_th, data_exp)
-
-				print(f'{value=}')
-				self.precision_var.set(f'{value=}%')
-    
-				self.graphs.add_data('line2', 1, [datetime.datetime.now().timestamp()], [value], value_limit=20)
-				self.graphs.add_data('line2', 2, [datetime.datetime.now().timestamp()], [100], limit=1) # Prevent resize
-				self.graphs.add_data('line2', 3, [datetime.datetime.now().timestamp()], [0], limit=1)
-
-				self.graphs.add_data('boxplot', 1, [datetime.datetime.now().timestamp()], [value], value_limit=20)
-
-			except Exception as e:
-				print(f'Erreur pendant la comparaison: {e}')
-
-
-	def matplotlib_integration_comparison_initialisation(self):
-		self.fig_compa, self.ax_compa = plt.subplots()
-		# self.ax_compa.set_ylim(0, 5)
-		self.dico_compa = {}
-		self.dico_donnee = {}
-		# self.ax_compa.boxplot(x=(1,1))
-		self.nbr_garde = 100
-
-		self.canvas_compa = FigureCanvasTkAgg(self.fig_compa, master = self) 
-		self.canvas_compa.draw()
-
-		self.canvas_compa.get_tk_widget().grid(row=6, column=7, rowspan=5, columnspan=1, sticky='nesw')
-
-	def matplotlib_integration_comparison_update(self):
-		self.ax_compa.clear()
-		# self.ax_compa.boxplot(self.dico_compa)
-		for k,v in self.dico_donnee.items():
-			if not isinstance(v[0][0], str):
-				continue
-			v = v[0][-self.nbr_garde:], v[1][-self.nbr_garde:]
-			try:
-				vtmp = [datetime.datetime.strptime(i, '%Y-%m-%d %H:%M:%S').timestamp() for i in v[0]]
-			except Exception as e:
-				pass
-			self.ax_compa.plot(vtmp, v[1])
-			self.dico_donnee[k] = v
-		self.fig_compa.canvas.draw()
-		self.after(100, self.matplotlib_integration_comparison_update)
-
-	def integration_in_right_pace(self, dico:dict): # Not used
-		self.dico_compa = dico
-
-	def add_data_sensors(self, liste:list):
-		convert_date = lambda i: datetime.datetime.strptime(i, '%Y-%m-%d %H:%M:%S').timestamp()
-		for obj in liste:
-			if isinstance(obj, MesureSimple):
-				# if obj.idCapteur < 6:
-				# 	continue
-				now = convert_date(obj.dateCreation)
-				self.graphs.add_data('line', obj.idCapteur, [now], [obj.valeur], value_limit=now-20) # last 20 sec
-    
-				off = 1
-				self.graphs.add_data('line', 11, [now], [0], limit=1) # prevent auto-resize
-				self.graphs.add_data('line', 12, [now], [off], limit=1)
-				# if self.dico_donnee.get(obj.idCapteur):
-				# 	self.dico_donnee[obj.idCapteur][0].append(obj.dateCreation)
-				# 	self.dico_donnee[obj.idCapteur][1].append(obj.valeur)
-				# else:
-				# 	self.dico_donnee[obj.idCapteur] = [[obj.dateCreation], [obj.valeur]]
-			if isinstance(obj, MesureVect):
-				if obj.idCapteur in (21, 24):
-					self.graphs.add_data('3D', obj.idCapteur, [obj.X, 0], [obj.Y, 0], [obj.Z, 0], limit=2)
-
-					off = 1.2
-					self.graphs.add_data('3D', 1, *[[-off]]*3, limit=1) # prevent auto-resize
-					self.graphs.add_data('3D', 2, *[[off]]*3, limit=1)
-				# if self.dico_donnee.get(obj.idCapteur):
-				# 	self.dico_donnee[obj.idCapteur][0].append(obj.dateCreation)
-				# 	self.dico_donnee[obj.idCapteur][1].append( obj.X)
-				# else:
-				# 	self.dico_donnee[obj.idCapteur] = [[obj.dateCreation], [obj.X]]
-		self.graphs.update('line')
-		self.graphs.update('3D')
-		self.graphs.plot()
+	self.graph_queue.put((None, 'UPDATE', 'line'))
+	self.graph_queue.put((None, 'UPDATE', '3D'))
+	# self.graphs.update('line')
+	# self.graphs.update('3D')
+	# self.graphs.plot()
 
 if __name__ == "__main__":
 	fen = MainWin(19) #1 admin, #10 test #19 test_teacher #20 test_eleve
-	fen.mainloop()	

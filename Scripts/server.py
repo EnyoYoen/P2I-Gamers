@@ -1,20 +1,30 @@
 from functools import partial
 import http.server
 import json
+import multiprocessing
+import os
 import queue
 import threading
 import time
-
 import requests
-from database import db
+
+from secret import CALIBRATION_FILE
 from dataclass import MesureSimple, MesureVect
 
 class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
-	def __init__(self, event, que, *args, **kwargs):
+	def __init__(self, event, que, gui_data_queue, idMvt, calibration_data, *args, **kwargs):
 		self.event = event
 		self.que = que
+		self.idMvt = idMvt
+		self.calibration_data = calibration_data
+
+		self.gui_data_queue = gui_data_queue
 
 		super().__init__(*args, **kwargs)
+
+	def log_message(self, format: str, *args) -> None:
+		return # Don't log anything
+		return super().log_message(format, *args)
 
 	def do_GET(self):
 		# Custom handling for GET requests
@@ -33,17 +43,9 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 		start = time.time()
 		idPaquet = 1
 		try:
-			idDonneeMouvement = self.event.idMvt
+			idDonneeMouvement = self.idMvt
 		except AttributeError:
 			idDonneeMouvement = -1
-
-		fingers_ranges = {
-			1:[0.2, 0],
-			2:[0.37, 0.2],
-			3:[0.25, 0.17],
-			4:[0.2, 0],
-			5:[0.33, 0.2],
-		}
 
 		simples, vects = [], []
 		for packet in post_body:
@@ -52,69 +54,146 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 			if packet['type'] == 'simple':
 				for idCapteur, value in packet['data'].items():
 					idCapteur = int(idCapteur)+1
-					if idCapteur > 5:
-						frange = fingers_ranges[idCapteur-5]
-						value = (value-frange[1]) / (frange[0]-frange[1])
 
-						value = min(max(value, 0), 1)
+					value = self.fix_sensor_value(idCapteur, value)
 
 					simples.append((idCapteur, idDonneeMouvement, date, value))
 					mesure = MesureSimple.from_raw((idCapteur, idDonneeMouvement, date, value))
 
-					self.que.put(mesure)
+					try:
+						self.que.put(mesure)
+					except Exception:
+						# Program has ended
+						break
 
 			elif packet['type'] == 'vector':
 				for idCapteur, vec in packet['data'].items():
+					vec = self.fix_sensor_value(idCapteur, vec)
+
 					vects.append((int(idCapteur)+1, idDonneeMouvement, date, *vec))
 					mesure = MesureVect.from_raw((int(idCapteur)+1, idDonneeMouvement, date, *vec, idPaquet))
 
-					self.que.put(mesure)
+					try:
+						self.que.put(mesure)
+					except Exception:
+						# Program has ended
+						break
 
-		if self.event.is_set():
-			print(f'Saving 1 packet, size: {len(post_body)}')
+		try:
+			is_event_set = self.event.is_set()
+		except Exception:
+			# Program has ended
+			pass
+		else:
+			if is_event_set:
+				print(f'Saving 1 packet, size: {len(post_body)}')
 
-			db.add_mesures_multiples(simples, vects)
+				self.db.add_mesures_multiples(simples, vects)
 
-			print(f'-> Done, took {time.time()-start}sec')
+				print(f'-> Done, took {time.time()-start}sec')
 
 		self.send_response(200)
 		self.end_headers()
 		self.wfile.write(b'Ok')
 		# self.wfile.write(b'Hello, World!')
 
-	def send_data(self, packets, thread=False):
-		if not thread:
-			threading.Thread(target=self.send_data, args=(packets, True)).start()
+	def fix_sensor_value(self, idCapteur, value):
+		if isinstance(idCapteur, str):
+			idCapteur = int(idCapteur)
+
+		if idCapteur <= 10:
+			# mesure simple
+			if 1 <= idCapteur <= 5:
+				# pression
+				if not hasattr(self.que, 'pressure_average'):
+					pass
+					self.que.pressure_average = pressure_average = [[] for _ in range(5)]
+				else:
+					pressure_average = self.que.pressure_average
+
+				pressure_average[idCapteur-1].append(value)
+				samples = 10
+				if len(pressure_average[idCapteur-1]) > samples: # 10 samples
+					pressure_average[idCapteur-1] = pressure_average[idCapteur-1][-samples:]
+
+				value = sum(pressure_average[idCapteur-1]) / len(pressure_average[idCapteur-1])
+			elif 6 <= idCapteur <= 10:
+				# flexion
+
+				if len(self.calibration_data) > 0:
+
+					frange = self.calibration_data[str(idCapteur)]
+
+					value = (value-frange[1]) / (frange[0]-frange[1])
+	
+			value = min(max(value, 0), 1)
+		else:
+			# vecteur
+			norm = sum([v**2 for v in value]) ** 0.5
+			if norm != 0 and norm != 1:
+				value = [v/norm for v in value]
+
+			# if len(self.calibration_data) > 0:
+
+			# 	ref = (0, 0) # TODO
+			# 	ref_angles = self.calibration_data[str(idCapteur)]
+			# 	teta = math.atan(value[1] / value[0])
+			# 	phi = math.acos(value[2] / (value[0]**2 + value[1]**2 + value[2]**2)**0.5) 
+			# 	value = 
+
+		return value
+
+	def send_data(self, packets):
+		try:
+			if not self.gui_data_queue.empty():
+				threading.Thread(target=self.gui_worker, daemon=True).start()
+		except Exception as e:
+			# Program has ended
 			return
 
-		out = {}
-		# for packet in packets:
-		for packet in packets[:2]:
-			if packet['type'] == 'simple':
-				for idCapteur, value in packet['data'].items():
-					if int(idCapteur) <= 4: # Only fingers
-						out[idCapteur] = [value, 0, 0]
-			elif packet['type'] == 'vector':
-				for idCapteur, vec in packet['data'].items():
-					if int(idCapteur) in (21, 24, 27):
-						out[int(idCapteur)//3 -2] = vec
+		self.gui_data_queue.put(packets)
+
+	def gui_worker(self):
+		while True:
+			try:
+				packets = self.gui_data_queue.get(timeout=5)
+			except queue.Empty:
+				# Stop the worker
+				return
+			except EOFError:
+				# Pipe has been ended
+				return
+			except Exception:
+				# Whatever, just start a new worker
+				return
+
+			out = {}
+			# for packet in packets:
+			for packet in packets[:2]:
+				if packet['type'] == 'simple':
+					for idCapteur, value in packet['data'].items():
+						if int(idCapteur) <= 4: # Only fingers
+							out[idCapteur] = [value, 0, 0]
+				elif packet['type'] == 'vector':
+					for idCapteur, vec in packet['data'].items():
+						if int(idCapteur) >= 17 and int(idCapteur)%3==1:
+							out[int(idCapteur)//3 - 1] = vec
 
 
-		serialized = ';'.join([','.join([str(k), *list(map(str, v))]) for k, v in out.items()])
+			serialized = ';'.join([','.join([str(k), *list(map(str, v))]) for k, v in out.items()])
 
-		URL = 'http://nitro5:13579/data?data=' + serialized
-		# URL = "http://localhost:13579/UpdatePos?bone=1&data={%22test%22:{%22bone%22:1,%20%22rotX%22:0.5}}"
-		try:
-			requests.get(URL)
-		except requests.ConnectionError as e:
-			# print('Error while sending data to renderer:', e)
-			pass
+			URL = 'http://nitro5:13579/data?data=' + serialized
+			# URL = "http://localhost:13579/UpdatePos?bone=1&data={%22test%22:{%22bone%22:1,%20%22rotX%22:0.5}}"
+			try:
+				requests.get(URL)
+			except requests.ConnectionError as e:
+				# print('Error while sending data to renderer:', e)
+				pass
 
 
-
-def run_custom_server(event, que):
+def run_custom_server(*args):
 	server_address = ('', 8085)  # Use a custom port if needed
-	httpd = http.server.HTTPServer(server_address, partial(CustomRequestHandler, event, que))
+	httpd = http.server.HTTPServer(server_address, partial(CustomRequestHandler, *args))
 	print('Starting HTTP server...')
 	httpd.serve_forever()
 
@@ -123,13 +202,30 @@ class DataServer:
 		self.start_server()
 
 	def start_server(self):
-		self.server_event = threading.Event()
-		self.dataQueue = queue.Queue()
-		self.server_thread = threading.Thread(target=self.run_server, args=(self.server_event,self.dataQueue), daemon=True)
+		self.manager = multiprocessing.Manager()
+
+		# self.server_event = threading.Event()
+		# self.dataQueue = queue.Queue()
+		# self.gui_data_queue = queue.Queue()
+
+		self.server_event = self.manager.Event()
+		self.dataQueue = self.manager.Queue()
+		self.gui_data_queue = self.manager.Queue()
+		self.idMvt = self.manager.Value('i', 0)
+		self.calibration_data = self.manager.dict()
+
+		if os.path.exists(CALIBRATION_FILE):
+			with open(CALIBRATION_FILE, 'r') as f:
+				self.calibration_data = json.load(f)
+		else:
+			self.calibration_data = {}
+
+		# self.server_thread = threading.Thread(target=self.run_server, args=(self.server_event,self.dataQueue, self.gui_data_queue), daemon=True)
+		self.server_thread = multiprocessing.Process(target=run_custom_server, args=(self.server_event, self.dataQueue, self.gui_data_queue, self.idMvt, self.calibration_data), daemon=True)
 		self.server_thread.start()
 
-	def run_server(self, event, que):
-		run_custom_server(event, que)
+	def run_server(self, *args):
+		run_custom_server(*args)
 
 if __name__ == '__main__':
 	# event = threading.Event()

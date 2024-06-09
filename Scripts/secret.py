@@ -7,3 +7,5 @@ DATABASE_LOGIN = {
 }
 
 ID_DISPOSITF = 1
+
+CALIBRATION_FILE = 'calibration.json'

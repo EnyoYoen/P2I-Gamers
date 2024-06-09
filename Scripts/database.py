@@ -9,7 +9,7 @@ class Database:
 	"""Gestion de la base de donnée"""
 	def __init__(self):
 		self.connexion_bd = None
-		# self.connexion()
+		self.connexion()
 		
 	def connexion(self):
 		try:
@@ -21,7 +21,6 @@ class Database:
 		return self.connexion_bd
 
 	def sql(self, sql, params=None):
-		return []
 		try:
 			cursor = self.connexion_bd.cursor()
 			cursor.execute(sql, params or [])
@@ -190,4 +189,5 @@ class Database:
 	def last_user_id(self):
 		return self.sql("SELECT idUtilisateur FROM Utilisateurs ORDER BY idUtilisateur DESC LIMIT 1")[0][0]
 
-db = Database()
+if __name__ == "__main__":
+    db = Database()

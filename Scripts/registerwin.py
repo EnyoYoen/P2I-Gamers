@@ -3,12 +3,13 @@ Affichage de la fênetre d'enregistrement
 """
 import tkinter as tk
 from tkinter.messagebox import showerror, showwarning, showinfo
-from password_manager import register_user
+from password_manager import PasswordManager
 
-class RegisterWin(tk.Tk):
+class RegisterWin(tk.Tk, PasswordManager):
 
     def __init__(self, queue) -> None:
         super().__init__()
+        PasswordManager.__init__(self)
         self.queue = queue
         self.user_id = None
         self.title('G.M.T. Enregistrement')
@@ -99,7 +100,7 @@ class RegisterWin(tk.Tk):
             showerror(title='Erreur', message='Les mots de passes ne correspondent pas')
         else:
 
-            user_id = register_user(user, password, height, is_student)
+            user_id = self.register_user(user, password, height, is_student)
             if user_id:
                 showinfo(title='Information', message=f'Le compte a été créé \n Bienvenue {user} !')
                 self.queue[0]='connected'

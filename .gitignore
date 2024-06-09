@@ -2,3 +2,4 @@
 WebApp/node_modules/*
 Scripts/__pycache__/
 Build/
+*.mp4
