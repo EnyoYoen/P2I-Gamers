@@ -181,6 +181,7 @@ class MainWin():
 		
 		self.bouton_start = tk.Button(self.root, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
+		self.root.bind('<space>', self.start)
 		self.bouton_start.grid(row=11, column=4)
 		
 		self.bouton_restart = tk.Button(self.root, image=self.img_start)
@@ -239,15 +240,6 @@ class MainWin():
 		Démarrage de l'enregistrement, création boutons pause et arret
 		"""
 		self.running.set(True)
-		now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-		self.idMvt.set(self.db.add_movement_data(self.user.idUtilisateur, 1, now, None))
-		self.server_event.set()
-
-		while True: # Clear the queue
-			try:
-				self.dataQueue.get_nowait()
-			except queue.Empty:
-				break
 
 		self.bouton_pause = tk.Button(self.root, image=self.img_pause)
 		self.bouton_pause.bind('<Button-1>', self.pause)
@@ -255,11 +247,21 @@ class MainWin():
 		
 		self.bouton_arret = tk.Button(self.root, image=self.img_stop)
 		self.bouton_arret.bind( '<Button-1>', self.arret)
+		self.root.bind('<space>', self.arret)
 		self.bouton_arret.grid(row=11, column=5)
 		
 		self.bouton_start.destroy()
 		self.start_time = datetime.datetime.now()
 		self.update_time()
+
+		self.idMvt.set(self.db.add_movement_data(self.user.idUtilisateur, 1, self.start_time.strftime('%Y-%m-%d %H:%M:%S.%f'), None))
+
+		while True: # Clear the queue
+			try:
+				self.dataQueue.get_nowait()
+			except queue.Empty:
+				break
+		self.server_event.set()
 
 	def update_time(self):
 		"""
@@ -312,6 +314,7 @@ class MainWin():
 		self.bouton_pause.destroy()
 		self.bouton_start = tk.Button(self.root, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
+		self.root.bind('<space>', self.start)
 		self.bouton_start.grid(row=11, column=4)
 		
 
@@ -475,7 +478,7 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 		self.comp_ns.graph_queue = manager.Queue()
 		self.comp_ns.dataQueue = self.dataQueue
 
-		for k in ('running', 'is_comparaison', 'is_calibrating'):
+		for k in ('running', 'is_comparaison', 'is_calibrating', 'idMvt'):
 			setattr(self.comp_ns, k, getattr(self, k)) # TODO - Graphs proxy
 
 		multiprocessing.Process(target=get_current_comp, args=(self.comp_ns, True,), daemon=True).start()
@@ -500,7 +503,7 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 				continue
 
 			data = [self.dataQueue.get()]
-			
+
 			counter = 0
 			while True: # Get all data from queue
 				try:
@@ -524,8 +527,12 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 
 			if self.running.value and self.is_comparaison.value:
 				try:
-					data = perceptron.get_mesure_list(self.idMvt.value, db)
-					label = perceptron.convert_to_sequence(data)
+					try:
+						data = perceptron.get_mesure_list(self.idMvt.value, db)
+						label = perceptron.convert_to_sequence(data)
+					except Exception as e:
+						print(f'Erreur du perceptron: {e}')
+						raise
 
 					mouvements = db.list_mouvements_info(1)
 
@@ -564,7 +571,8 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 					# self.graphs.add_data('boxplot', 1, [datetime.datetime.now().timestamp()], [value], value_limit=20)
 
 				except Exception as e:
-					print(f'Erreur pendant la comparaison: {e}')
+					print(f'Erreur apres la comparaison: {e}')
+					pass
 
 		except EOFError:
 			break # Program is shutting down
