@@ -35,6 +35,12 @@ class Database:
 		self.connexion_bd.commit()
 
 	@MouvementInfo.cast
+	def list_mouvements(self):
+		"""Renvoie la liste de tous les mouvements"""
+		sql = "SELECT * FROM DonneesMouvements"
+		return self.sql(sql)
+
+	@MouvementInfo.cast
 	def list_mouvements_info(self, id_user: int) -> list:
 		"""Renvoie la liste de tous les mouvements de l'user mis en paramètre"""
 		sql = "SELECT * FROM DonneesMouvements WHERE idUtilisateur=%s" 
@@ -49,13 +55,13 @@ class Database:
 	@MesureSimple.cast
 	def get_mesure_simple(self, idDonneeMouvement):
 		"""Renvoie la liste de mesures simples correspondant au mouvement idDonneeMouvement"""
-		sql = "SELECT * FROM MesuresSimples WHERE idDonneeMouvement = %s"
+		sql = "SELECT idCapteur, idDonneeMouvement, date, valeur FROM MesuresSimples WHERE idDonneeMouvement = %s"
 		return self.sql(sql, [idDonneeMouvement])
 
 	@MesureVect.cast
 	def get_mesure_vect(self, idDonneeMouvement):
 		"""Renvoie la liste de mesures vectorielles correspondant au mouvement idDonneeMouvement"""
-		sql = "SELECT * FROM MesuresVect WHERE idDonneeMouvement = %s"
+		sql = "SELECT idCapteur, idDonneeMouvement, date, x, y, z FROM MesuresVect WHERE idDonneeMouvement = %s"
 		return self.sql(sql, [idDonneeMouvement])
 
 	def get_mouvement(self, idDonneeMouvement):

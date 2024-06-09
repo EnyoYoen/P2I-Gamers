@@ -46,21 +46,19 @@ class MouvementInfo(DataClass):
 class MesureSimple(DataClass):
 	KEYS = [
 		'idCapteur',
-		'idMesure',
+		'idMvt',
 		'dateCreation',
 		'valeur',
-		'idMvt'
 	]
 
 class MesureVect(DataClass):
 	KEYS = [
 		'idCapteur',
-		'idMesure',
+		'idMvt',
 		'dateCreation',
 		'X',
 		'Y',
 		'Z',
-		'idMvt'
 	]
 
 class Capteur(DataClass):
@@ -69,7 +67,7 @@ class Capteur(DataClass):
 		'idPlacement',
 		'idDispositif',
 		'date_installation',
-		'date_desinstallation'
+		'date_desinstallation',
 		'nom',
 		'fabricant',
 		'type',
