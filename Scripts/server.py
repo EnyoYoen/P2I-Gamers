@@ -8,6 +8,7 @@ import threading
 import time
 import requests
 
+from database import Database
 from secret import CALIBRATION_FILE
 from dataclass import MesureSimple, MesureVect
 
@@ -43,9 +44,9 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 		start = time.time()
 		idPaquet = 1
 		try:
-			idDonneeMouvement = self.idMvt
+			idDonneeMouvement = self.idMvt.value
 		except AttributeError:
-			idDonneeMouvement = -1
+			idDonneeMouvement = 1
 
 		simples, vects = [], []
 		for packet in post_body:
@@ -85,10 +86,11 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 			# Program has ended
 			pass
 		else:
-			if is_event_set:
+			if is_event_set and idDonneeMouvement != -1:
 				print(f'Saving 1 packet, size: {len(post_body)}')
 
-				self.db.add_mesures_multiples(simples, vects)
+				db = Database()
+				db.add_mesures_multiples(simples, vects)
 
 				print(f'-> Done, took {time.time()-start}sec')
 
@@ -211,7 +213,7 @@ class DataServer:
 		self.server_event = self.manager.Event()
 		self.dataQueue = self.manager.Queue()
 		self.gui_data_queue = self.manager.Queue()
-		self.idMvt = self.manager.Value('i', 0)
+		self.idMvt = self.manager.Value('i', -1)
 		self.calibration_data = self.manager.dict()
 
 		if os.path.exists(CALIBRATION_FILE):

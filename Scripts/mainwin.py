@@ -483,11 +483,11 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 
 	db = Database()
 
-	while True: # Clear all data from queue -> because otherwise we jsut spend way too long processing old data
-		try:
-			self.dataQueue.get_nowait()
-		except queue.Empty:
-			break
+	# while True: # Clear all data from queue -> because otherwise we jsut spend way too long processing old data
+	# 	try:
+	# 		self.dataQueue.get_nowait()
+	# 	except queue.Empty:
+	# 		break
 
 	while True:
 
@@ -516,7 +516,7 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 			# self.donne_recup_william(data)
 
 			if not self.running:
-				return
+				continue
 
 			if self.is_comparaison:
 				try:
