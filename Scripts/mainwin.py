@@ -23,6 +23,8 @@ from server import DataServer
 import namewin
 import calibration_popup
 
+import pandas as pd
+
 # from tkinter import font
 # from tkinter import messagebox
 # import matplotlib
@@ -534,11 +536,11 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 						try:
 							label = self.factor_to_label[perceptron.predict(
 								self.mlp, 
-								perceptron.convert_to_sequence(
+								pd.DataFrame(np.array([perceptron.convert_to_sequence(
 									perceptron.get_mesure_list(
-										self.idMvt.value, 
+										326, 
 										db
-							)).flatten())]
+							)).flatten()])))[0]]
 						except Exception as e:
 							print(f'Erreur du perceptron: {e}')
 							pass

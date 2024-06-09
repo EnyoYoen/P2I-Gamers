@@ -98,9 +98,6 @@ def train_MLP(data):
     return mlp
 
 def predict(mlp, data):
-    if not isinstance(data, pd.DataFrame):
-        data = pd.DataFrame(np.array([data]))
-
     return mlp.predict(data)
 
 def save_MLP(mlp, filename = 'MLP.pkl'):
