@@ -181,6 +181,7 @@ class MainWin():
 		
 		self.bouton_start = tk.Button(self.root, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
+		self.root.bind('<space>', self.start)
 		self.bouton_start.grid(row=11, column=4)
 		
 		self.bouton_restart = tk.Button(self.root, image=self.img_start)
@@ -255,6 +256,7 @@ class MainWin():
 		
 		self.bouton_arret = tk.Button(self.root, image=self.img_stop)
 		self.bouton_arret.bind( '<Button-1>', self.arret)
+		self.root.bind('<space>', self.arret)
 		self.bouton_arret.grid(row=11, column=5)
 		
 		self.bouton_start.destroy()
@@ -312,6 +314,7 @@ class MainWin():
 		self.bouton_pause.destroy()
 		self.bouton_start = tk.Button(self.root, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
+		self.root.bind('<space>', self.start)
 		self.bouton_start.grid(row=11, column=4)
 		
 
