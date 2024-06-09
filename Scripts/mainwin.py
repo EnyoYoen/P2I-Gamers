@@ -343,7 +343,7 @@ class MainWin():
 		Affiche l'analyse comparative à partir de la base de donnée
 		'''
 		mvt_the = {}
-		name_predict = self.factor_to_label[perceptron.predict(self.mlp, perceptron.get_mesure_list(self.server_event.idMvt, self.db))]
+		name_predict = self.factor_to_label[perceptron.predict(self.mlp, perceptron.convert_to_sequence(perceptron.get_mesure_list(self.server_event.idMvt, self.db)))]
 		for li in self.db.list_mouvements_info(1) :
 			id = li.idMvt
 			name = li.name
