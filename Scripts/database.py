@@ -202,4 +202,4 @@ class Database:
 		return self.sql("SELECT idUtilisateur FROM Utilisateurs ORDER BY idUtilisateur DESC LIMIT 1")[0][0]
 
 if __name__ == "__main__":
-    db = Database()
+	db = Database()

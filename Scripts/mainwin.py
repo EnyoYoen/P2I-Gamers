@@ -11,6 +11,7 @@ import threading
 import time
 import tkinter as tk
 import itertools
+from PIL import Image, ImageTk
 
 from secret import CALIBRATION_FILE
 
@@ -22,6 +23,8 @@ import comparaison as cp
 from server import DataServer
 import namewin
 import calibration_popup
+
+import pandas as pd
 
 # from tkinter import font
 # from tkinter import messagebox
@@ -41,7 +44,7 @@ class MainWin():
 		self.user = self.db.get_user(user_id)
 		self.root = tk.Tk()
 		
-		# self.mlp = perceptron.load_MLP()
+		self.mlp, self.factor_to_label = perceptron.load_MLP()
 		self.typesCapteurs = {}
 
 		for type in self.db.list_type_capteurs():
@@ -86,6 +89,17 @@ class MainWin():
 			self.root.columnconfigure(i, weight=1)
 			self.root.rowconfigure(i, weight=1)
 
+		#image du logo
+		self.img_logo_pil = Image.open('Scripts/images/logo.png')
+		self.img_logo_resize = self.img_logo_pil.resize((34, 26), Image.LANCZOS)
+		self.img_logo = ImageTk.PhotoImage(self.img_logo_resize)
+		self.label_logo = tk.Label(self.root, image=self.img_logo)
+		self.label_logo.grid(row=0, column=4)
+
+		#icone de la fenetre
+		self.icon_image = tk.PhotoImage(file='Scripts/images/logo.png')
+		self.root.iconphoto(False, self.icon_image)
+
 		#Label tout en haut
 		self.title_font = tk.font.Font(family="Bahnschrift SemiBold Condensed", size=16)
 		self.label = tk.Label(self.root, text="ENTRAINEMENT G.M.T", font=self.title_font, fg='#93B2DB')
@@ -94,7 +108,7 @@ class MainWin():
 		self.root.columnconfigure(0, weight=0)
 		self.root.columnconfigure(1, weight=0)
 
-		self.label.grid(row=0, column=0, columnspan=8)
+		self.label.grid(row=0, column=4, columnspan=2)
 
 		#Frame historique
 		self.frame_historique = tk.Frame(self.root)
@@ -181,6 +195,7 @@ class MainWin():
 		
 		self.bouton_start = tk.Button(self.root, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
+		self.root.bind('<space>', self.start)
 		self.bouton_start.grid(row=11, column=4)
 		
 		self.bouton_restart = tk.Button(self.root, image=self.img_start)
@@ -239,15 +254,6 @@ class MainWin():
 		Démarrage de l'enregistrement, création boutons pause et arret
 		"""
 		self.running.set(True)
-		now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-		self.idMvt.set(self.db.add_movement_data(self.user.idUtilisateur, 1, now, None))
-		self.server_event.set()
-
-		while True: # Clear the queue
-			try:
-				self.dataQueue.get_nowait()
-			except queue.Empty:
-				break
 
 		self.bouton_pause = tk.Button(self.root, image=self.img_pause)
 		self.bouton_pause.bind('<Button-1>', self.pause)
@@ -255,11 +261,21 @@ class MainWin():
 		
 		self.bouton_arret = tk.Button(self.root, image=self.img_stop)
 		self.bouton_arret.bind( '<Button-1>', self.arret)
+		self.root.bind('<space>', self.arret)
 		self.bouton_arret.grid(row=11, column=5)
 		
 		self.bouton_start.destroy()
 		self.start_time = datetime.datetime.now()
 		self.update_time()
+
+		self.idMvt.set(self.db.add_movement_data(self.user.idUtilisateur, 1, self.start_time.strftime('%Y-%m-%d %H:%M:%S.%f'), None))
+
+		while True: # Clear the queue
+			try:
+				self.dataQueue.get_nowait()
+			except queue.Empty:
+				break
+		self.server_event.set()
 
 	def update_time(self):
 		"""
@@ -312,6 +328,7 @@ class MainWin():
 		self.bouton_pause.destroy()
 		self.bouton_start = tk.Button(self.root, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
+		self.root.bind('<space>', self.start)
 		self.bouton_start.grid(row=11, column=4)
 		
 
@@ -342,10 +359,8 @@ class MainWin():
 		'''
 		Affiche l'analyse comparative à partir de la base de donnée
 		'''
-		# à adapter avec l'apprentissage 
-		mvt_exp = self.db.get_mesure_vect(self.server_event.idMvt.value)
 		mvt_the = {}
-		name_predict = str(perceptron.predict(mvt_exp)) #ajouter mlp
+		name_predict = self.factor_to_label[perceptron.predict(self.mlp, perceptron.convert_to_sequence(perceptron.get_mesure_list(self.idMvt.value, self.db)))]
 		for li in self.db.list_mouvements_info(1) :
 			id = li.idMvt
 			name = li.name
@@ -381,7 +396,7 @@ class MainWin():
 	def update_plots(self):
 		self.root.after(100, self.update_plots)
 
-		self.precision_var.set(f'{self.precision_var_proxy} %')
+		self.precision_var.set(f'{self.precision_var_proxy.value} %')
 
 		while not self.graph_queue.empty():
 			packet = self.graph_queue.get()
@@ -473,17 +488,19 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 
 		manager = multiprocessing.Manager()
 		self.comp_ns = manager.Namespace()
-		self.comp_ns.precision_var = 0.0
+		self.comp_ns.precision_var = manager.Value('d', 0.0)
 		self.comp_ns.graph_queue = manager.Queue()
 		self.comp_ns.dataQueue = self.dataQueue
 
-		for k in ('running', 'is_comparaison', 'is_calibrating'):
+		for k in ('running', 'is_comparaison', 'is_calibrating', 'idMvt'):
 			setattr(self.comp_ns, k, getattr(self, k)) # TODO - Graphs proxy
 
 		multiprocessing.Process(target=get_current_comp, args=(self.comp_ns, True,), daemon=True).start()
 		return self.comp_ns.graph_queue, self.comp_ns.precision_var
 
 	db = Database()
+	
+	self.mlp, self.factor_to_label = perceptron.load_MLP()
 
 	# while True: # Clear all data from queue -> because otherwise we jsut spend way too long processing old data
 	# 	try:
@@ -502,7 +519,7 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 				continue
 
 			data = [self.dataQueue.get()]
-			
+
 			counter = 0
 			while True: # Get all data from queue
 				try:
@@ -524,47 +541,60 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 			else:
 				add_data_sensors(self, data)
 
-			continue
 			if self.running.value and self.is_comparaison.value:
 				try:
-					data_mlp = perceptron.convert_to_sequence(data)
-					print(data_mlp)
-					# nom_th = perceptron.predict(data)
-					mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(2)
+					USE_PERCEPTRON = True
+					if USE_PERCEPTRON:
+						try:
+							label = self.factor_to_label[perceptron.predict(
+								self.mlp, 
+								pd.DataFrame(np.array([perceptron.convert_to_sequence(
+									perceptron.get_mesure_list(
+										326, 
+										db
+							)).flatten()])))[0]]
+						except Exception as e:
+							print(f'Erreur du perceptron: {e}')
+							pass
+							label = None
 
-					try:
-						capteurs = {}
+						print(f'{label=}')
+						if label is not None:
+							mouvements = db.list_mouvements_info(1)
 
-						data_th = {}
-						data_exp = {}
-						for mesure_cat, mesures in [(data_exp, data), (data_th, itertools.chain(mesures_vect, mesures_simple))]:
-							for mesure in mesures:
-								idCapteur = mesure.idCapteur
-								if idCapteur not in capteurs:
-									capteur = db.get_capteur(idCapteur)
-									capteurs[idCapteur] = capteur.type
+							for mouvement in mouvements:
+								if mouvement.name == label:
+									idMvtTh = mouvement.idMvt
+									break
+							else:
+								idMvtTh = None
+						else:
+							idMvtTh = None
+					else:
+						idMvtTh = 329
 
-									cat = capteurs[idCapteur]
-									if cat not in data_exp:
-										data_exp[cat] = []
+					if idMvtTh is not None:
+						mesures_simple_exp, mesures_vect_exp = db.get_mesure_simple(self.idMvt.value), db.get_mesure_vect(self.idMvt.value)
 
-									mesure_cat[cat].append(mesure)
+						if len(mesures_simple_exp) != 0 and len(mesures_vect_exp) != 0:
 
-						value = cp.comparaison_direct(data_th, data_exp)
+							try:
+								# value = cp.comparaison_direct(data_th, data_exp)
+								value = cp.comparaison_direct2(mesures_simple_exp, mesures_vect_exp, idMvtTh)
 
-						print(f'{value=}')
-						self.precision_var = value
-					except Exception as e:
-						print(f'Erreur pendant la comparaison: {e}')
-						raise
+								print(f'{value=}')
+								self.precision_var.set(value)
+							except Exception as e:
+								print(f'Erreur pendant la comparaison: {e}')
+								pass
 
-					packet = []
-					packet.append(('line2', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
-					packet.append(('line2', 2, ([datetime.datetime.now().timestamp()], [100]), 1))
-					packet.append(('line2', 3, ([datetime.datetime.now().timestamp()], [0]), 1))
-					packet.append(('boxplot', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
+							packet = []
+							packet.append(('line2', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
+							packet.append(('line2', 2, ([datetime.datetime.now().timestamp()], [100]), 1))
+							packet.append(('line2', 3, ([datetime.datetime.now().timestamp()], [0]), 1))
+							packet.append(('boxplot', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
 
-					self.graph_queue.put(packet)
+							self.graph_queue.put(packet)
 	
 					# self.graphs.add_data('line2', 1, [datetime.datetime.now().timestamp()], [value], value_limit=20)
 					# self.graphs.add_data('line2', 2, [datetime.datetime.now().timestamp()], [100], limit=1) # Prevent resize
@@ -573,7 +603,8 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 					# self.graphs.add_data('boxplot', 1, [datetime.datetime.now().timestamp()], [value], value_limit=20)
 
 				except Exception as e:
-					print(f'Erreur pendant la comparaison: {e}')
+					print(f'Erreur apres la comparaison: {e}')
+					pass
 
 		except EOFError:
 			break # Program is shutting down
