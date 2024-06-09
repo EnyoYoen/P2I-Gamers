@@ -11,6 +11,7 @@ import threading
 import time
 import tkinter as tk
 import itertools
+from PIL import Image, ImageTk
 
 from secret import CALIBRATION_FILE
 
@@ -86,6 +87,17 @@ class MainWin():
 			self.root.columnconfigure(i, weight=1)
 			self.root.rowconfigure(i, weight=1)
 
+		#image du logo
+		self.img_logo_pil = Image.open('Scripts/images/logo.png')
+		self.img_logo_resize = self.img_logo_pil.resize((34, 26), Image.LANCZOS)
+		self.img_logo = ImageTk.PhotoImage(self.img_logo_resize)
+		self.label_logo = tk.Label(self.root, image=self.img_logo)
+		self.label_logo.grid(row=0, column=4)
+
+		#icone de la fenetre
+		self.icon_image = tk.PhotoImage(file='Scripts/images/logo.png')
+		self.root.iconphoto(False, self.icon_image)
+
 		#Label tout en haut
 		self.title_font = tk.font.Font(family="Bahnschrift SemiBold Condensed", size=16)
 		self.label = tk.Label(self.root, text="ENTRAINEMENT G.M.T", font=self.title_font, fg='#93B2DB')
@@ -94,7 +106,7 @@ class MainWin():
 		self.root.columnconfigure(0, weight=0)
 		self.root.columnconfigure(1, weight=0)
 
-		self.label.grid(row=0, column=0, columnspan=8)
+		self.label.grid(row=0, column=4, columnspan=2)
 
 		#Frame historique
 		self.frame_historique = tk.Frame(self.root)
