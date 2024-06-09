@@ -12,6 +12,8 @@ class NameWin(tk.Toplevel) :
 
 		self.entry_nom = tk.Entry(self)
 		self.entry_nom.pack(ipadx=10, ipady=5)
+		self.entry_nom.focus_set()
+		self.entry_nom.bind('<Return>', self.return_nom)
 
 		self.bouton_valider_nom = tk.Button(self, text='Valider')
 		self.bouton_valider_nom.bind('<Button-1>', self.confirme_nom)
@@ -25,6 +27,9 @@ class NameWin(tk.Toplevel) :
 		# self.root.indice_historique += 1
 		# self.root.list_historique.insert(tk.END, str(self.root.indice_historique) + '- ' + self.nom + ' ' + str(self.root.duree_memo) + 's')
 	
+	def return_nom(self, event) :
+		self.confirme_nom('<Return>')
+
 if __name__ == '__main__':
 	win = NameWin()
 	win.mainloop()
