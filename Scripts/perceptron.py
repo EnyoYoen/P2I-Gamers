@@ -70,13 +70,13 @@ def convert_to_sequence(mesures):
     return array
 
 def train_MLP(data):
-    train_data, test_data = train_test_split(data, test_size=0.5, random_state=1)
+    train_data, test_data = train_test_split(data, test_size=0.2, random_state=1)
     train = train_data.iloc[:,-1:]
     train_labels = train_data.iloc[:,-1:]
     test = test_data.iloc[:,-1:]
     test_labels = test_data.iloc[:,-1:]
 
-    mlp = MLPClassifier(hidden_layer_sizes = (10, 20), random_state=1, max_iter=1000).fit(train, train_labels)
+    mlp = MLPClassifier(hidden_layer_sizes = (10, 20), random_state=1, max_iter=500).fit(train, train_labels)
     pred = mlp.predict(test.loc[:,:])
 
     cm = confusion_matrix(test_labels, pred, labels=[0, 1])
@@ -134,4 +134,4 @@ if __name__ == "__main__":
     df['label'] = pd.Series(labels).factorize()[0]
 
     mlp = train_MLP(df)
-    save_MLP(mlp)
+    save_MLP((mlp, (labels, pd.Series(labels).factorize()[0])))
