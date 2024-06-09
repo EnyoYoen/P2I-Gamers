@@ -343,7 +343,7 @@ class MainWin():
 		Affiche l'analyse comparative à partir de la base de donnée
 		'''
 		mvt_the = {}
-		name_predict = self.factor_to_label[perceptron.predict(self.mlp, perceptron.get_mesure_list(self.server_event.idMvt, self.db))]
+		name_predict = self.factor_to_label[perceptron.predict(self.mlp, perceptron.get_mesure_list(self.idMvt.value, self.db))]
 		for li in self.db.list_mouvements_info(1) :
 			id = li.idMvt
 			name = li.name
@@ -482,6 +482,8 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 		return self.comp_ns.graph_queue, self.comp_ns.precision_var
 
 	db = Database()
+	
+	self.mlp, self.factor_to_label = perceptron.load_MLP()
 
 	# while True: # Clear all data from queue -> because otherwise we jsut spend way too long processing old data
 	# 	try:
@@ -525,8 +527,13 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 			if self.running.value and self.is_comparaison.value:
 				try:
 					try:
-						data = perceptron.get_mesure_list(self.idMvt.value, db)
-						label = perceptron.convert_to_sequence(data)
+						label = self.factor_to_label[perceptron.predict(
+							self.mlp, 
+							perceptron.convert_to_sequence(
+								perceptron.get_mesure_list(
+									self.idMvt.value, 
+									db
+						)))]
 					except Exception as e:
 						print(f'Erreur du perceptron: {e}')
 						raise
