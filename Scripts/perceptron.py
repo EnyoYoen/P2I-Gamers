@@ -133,7 +133,7 @@ if __name__ == "__main__":
     mouvements = db.list_mouvements()
     for mouvement in mouvements:
         nom = mouvement.name
-        if nom is not None:
+        if nom is not None and nom != "NON":
             labels.append(mouvement.name)
             mouvements_data.append(convert_to_sequence(get_mesure_list(mouvement.idMvt, db)).flatten())
 
