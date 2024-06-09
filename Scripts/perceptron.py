@@ -13,6 +13,7 @@ def convert_to_sequence(mesures):
 
     array = np.zeros((190 * 5, 1), dtype=int)
 
+    print(inertie_data[0].dateCreation)
     start_time = datetime.strptime(inertie_data[0].dateCreation, '%Y-%m-%d %H:%M:%S.%f')
     end_time = start_time.replace(second=start_time.second - 1)
     seconds = 0
@@ -113,7 +114,7 @@ if __name__ == "__main__":
     db = Database()
     
     mesures_simples = db.get_mesure_simple(307)
-    mesures_vects = db.get_mesure_simple(307)
+    mesures_vects = db.get_mesure_vect(307)
 
     pression = []
     flexion = []
