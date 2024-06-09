@@ -126,7 +126,7 @@ if __name__ == "__main__":
     from database import Database
 
     db = Database()
-    """
+    
     labels = []
     mouvements_data = []
 
@@ -147,7 +147,3 @@ if __name__ == "__main__":
     for i in range(len(unique_labels)):
         factor_to_label[unique_factors[i]] = unique_labels[i]
     save_MLP((mlp, factor_to_label))
-    """
-    b = convert_to_sequence(get_mesure_list(326, db)).flatten()
-    mlp, f_t_l = load_MLP()
-    print(predict(mlp, pd.DataFrame(np.array([b]))))
