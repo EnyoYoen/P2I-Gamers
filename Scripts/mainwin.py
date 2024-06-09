@@ -239,8 +239,7 @@ class MainWin():
 		"""
 		self.running.set(True)
 		now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-		idMvt = self.db.add_movement_data(self.user.idUtilisateur, 1, now, None)
-		self.idMvt = idMvt
+		self.idMvt.set(self.db.add_movement_data(self.user.idUtilisateur, 1, now, None))
 		self.server_event.set()
 
 		while True: # Clear the queue
@@ -317,7 +316,7 @@ class MainWin():
 
 		#self.compare_message()
 
-		self.sauvegarde()		
+		self.sauvegarde()
 
 	def sauvegarde(self):
 		"""
@@ -343,7 +342,7 @@ class MainWin():
 		Affiche l'analyse comparative à partir de la base de donnée
 		'''
 		# à adapter avec l'apprentissage 
-		mvt_exp = self.db.get_mesure_vect(self.server_event.idMvt)
+		mvt_exp = self.db.get_mesure_vect(self.server_event.idMvt.value)
 		mvt_the = {}
 		name_predict = str(perceptron.predict(mvt_exp)) #ajouter mlp
 		for li in self.db.list_mouvements_info(1) :
@@ -371,7 +370,7 @@ class MainWin():
 
 		def callback(nom):
 			if nom:
-				idmvt = self.idMvt 
+				idmvt = self.idMvt.value
 				self.db.rename_donnees(idmvt,nom)
 				enregistrement = self.db.list_mouvements_info(1) #id 1 pour les pre-enregistrement
 				self.list_pre_enregistrement.insert(tk.END, str(len(enregistrement)) + ' - ' + str(enregistrement[-1].name) )
@@ -522,37 +521,41 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 
 			if len(data) > 100:
 				print('TOO MUCH DATA, dropping everything', len(data), flush=True)
-				continue
 			else:
 				add_data_sensors(self, data)
 
+			continue
 			if self.running.value and self.is_comparaison.value:
 				try:
 					# nom_th = perceptron.predict(data)
 					mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(2)
 
-					capteurs = {}
+					try:
+						capteurs = {}
 
-					data_th = {}
-					data_exp = {}
-					for mesure_cat, mesures in [(data_exp, data), (data_th, itertools.chain(mesures_vect, mesures_simple))]:
-						for mesure in mesures:
-							idCapteur = mesure.idCapteur
-							if idCapteur not in capteurs:
-								capteur = db.get_capteur(idCapteur)
-								capteurs[idCapteur] = capteur.type
+						data_th = {}
+						data_exp = {}
+						for mesure_cat, mesures in [(data_exp, data), (data_th, itertools.chain(mesures_vect, mesures_simple))]:
+							for mesure in mesures:
+								idCapteur = mesure.idCapteur
+								if idCapteur not in capteurs:
+									capteur = db.get_capteur(idCapteur)
+									capteurs[idCapteur] = capteur.type
 
-								cat = capteurs[idCapteur]
-								if cat not in data_exp:
-									data_exp[cat] = []
+									cat = capteurs[idCapteur]
+									if cat not in data_exp:
+										data_exp[cat] = []
 
-								mesure_cat[cat].append(mesure)
+									mesure_cat[cat].append(mesure)
 
-					value = cp.comparaison_direct(data_th, data_exp)
+						value = cp.comparaison_direct(data_th, data_exp)
 
-					print(f'{value=}')
-					self.precision_var = value
-		
+						print(f'{value=}')
+						self.precision_var = value
+					except Exception as e:
+						print(f'Erreur pendant la comparaison: {e}')
+						raise
+
 					packet = []
 					packet.append(('line2', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
 					packet.append(('line2', 2, ([datetime.datetime.now().timestamp()], [100]), 1))
@@ -569,7 +572,6 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 
 				except Exception as e:
 					print(f'Erreur pendant la comparaison: {e}')
-					raise
 
 		except EOFError:
 			break # Program is shutting down

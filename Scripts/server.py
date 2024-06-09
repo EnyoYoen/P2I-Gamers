@@ -13,11 +13,13 @@ from secret import CALIBRATION_FILE
 from dataclass import MesureSimple, MesureVect
 
 class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
-	def __init__(self, event, que, gui_data_queue, idMvt, calibration_data, *args, **kwargs):
+	def __init__(self, db, event, que, gui_data_queue, idMvt, calibration_data, *args, **kwargs):
 		self.event = event
 		self.que = que
 		self.idMvt = idMvt
 		self.calibration_data = calibration_data
+
+		self.db = db
 
 		self.gui_data_queue = gui_data_queue
 
@@ -92,8 +94,7 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 			if is_event_set and idDonneeMouvement != -1:
 				print(f'Saving 1 packet, size: {len(post_body)}')
 
-				db = Database()
-				db.add_mesures_multiples(simples, vects)
+				self.db.add_mesures_multiples(simples, vects)
 
 				print(f'-> Done, took {time.time()-start}sec')
 
@@ -198,6 +199,7 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 
 def run_custom_server(*args):
 	server_address = ('', 8085)  # Use a custom port if needed
+	args = [Database()] + list(args)
 	httpd = http.server.HTTPServer(server_address, partial(CustomRequestHandler, *args))
 	print('Starting HTTP server...')
 	httpd.serve_forever()
@@ -216,7 +218,7 @@ class DataServer:
 		self.server_event = self.manager.Event()
 		self.dataQueue = self.manager.Queue()
 		self.gui_data_queue = self.manager.Queue()
-		self.idMvt = self.manager.Value('i', -1)
+		self.idMvt = self.manager.Value('i', 0)
 		self.calibration_data = self.manager.dict()
 
 		if os.path.exists(CALIBRATION_FILE):
@@ -237,7 +239,6 @@ if __name__ == '__main__':
 	# run_custom_server(event)
 	serv = DataServer()
 	serv.server_event.set()
-	serv.server_event.idMvt = 2
 	moy = serv.dataQueue.get()
 
 	while True:
