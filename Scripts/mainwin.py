@@ -533,18 +533,17 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 
 					for mouvement in mouvements:
 						if mouvement.name == label:
-							mvt_th = db.get_mouvement(mouvement.idMvt)
+							idMvtTh = mouvement.idMvt
 							break
 					else:
-						mvt_th = None
+						idMvtTh = None
 
-					if mvt_th is not None:
-						mvmt_info_th, mesures_simple_th, mesures_vect_th = mvt_th
-
+					if idMvtTh is not None:
 						mvmt_info_exp, mesures_simple_exp, mesures_vect_exp = db.get_mouvement(self.idMvt.value)
 
 						try:
-							value = cp.comparaison_direct(data_th, data_exp)
+							# value = cp.comparaison_direct(data_th, data_exp)
+							value = cp.comparaison_direct2(mesures_simple_exp, mesures_vect_exp, idMvtTh)
 
 							print(f'{value=}')
 							self.precision_var = value
