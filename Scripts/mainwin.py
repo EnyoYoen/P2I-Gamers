@@ -239,7 +239,7 @@ class MainWin():
 		Démarrage de l'enregistrement, création boutons pause et arret
 		"""
 		self.running.set(True)
-		now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+		now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
 		self.idMvt.set(self.db.add_movement_data(self.user.idUtilisateur, 1, now, None))
 		self.server_event.set()
 
