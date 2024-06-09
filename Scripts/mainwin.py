@@ -56,8 +56,10 @@ class MainWin():
 
 		self.root.geometry(f"{screen_width}x{screen_height}")
 
-		self.is_calibrating = False
-		self.is_comparaison = True
+		manager = multiprocessing.Manager()
+		self.is_calibrating = manager.Value('b', False)
+		self.is_comparaison = manager.Value('b', True)
+		self.running = manager.Value('b', False)
 
 		# self.f = Figure(figsize=(2,2), dpi=100)
 		# self.a = self.f.add_subplot(111)
@@ -160,7 +162,6 @@ class MainWin():
 		
 		#gestion enregistrement
 		self.start_time = 0
-		self.running = False
 		self.chrono = tk.Label(self.root, text='00:00:00', fg='#444445')
 		self.chrono.grid(row=13, column=4)
 
@@ -217,12 +218,12 @@ class MainWin():
 		self.graph_frame.grid(row=1, column=7, rowspan=10, columnspan=1, sticky='nesw')
 
 	def off_compa(self, event):
-		self.is_comparaison = False
+		self.is_comparaison.set(False)
 		self.bouton_desac_compa.grid_forget()
 		self.bouton_act_compa.grid(row=11, column=7)
 
 	def on_compa(self, event):
-		self.is_comparaison = True
+		self.is_comparaison.set(True)
 		self.bouton_act_compa.grid_forget()
 		self.bouton_desac_compa.grid(row=11, column=7)
 
@@ -236,7 +237,7 @@ class MainWin():
 		"""
 		Démarrage de l'enregistrement, création boutons pause et arret
 		"""
-		self.running = True
+		self.running.set(True)
 		now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 		idMvt = self.db.add_movement_data(self.user.idUtilisateur, 1, now, None)
 		self.idMvt = idMvt
@@ -264,7 +265,7 @@ class MainWin():
 		"""
 		Mise à jour du temps
 		"""
-		if self.running == True :
+		if self.running.value == True :
 			d = datetime.datetime.now() - self.start_time
 			txt = (datetime.datetime.fromtimestamp(d.total_seconds()) - datetime.timedelta(hours=1)).strftime('%H:%M:%S')
 			self.chrono.config(text=txt)
@@ -274,7 +275,7 @@ class MainWin():
 		"""
 		Pause de l'enregistrement
 		"""
-		self.running = False
+		self.running.set(False)
 		self.server_event.clear()
 
 		self.bouton_pause.destroy()
@@ -286,7 +287,7 @@ class MainWin():
 		"""
 		Reprise de l'enregistrement
 		"""
-		self.running = True
+		self.running.set(True)
 		self.server_event.set()
 
 		self.bouton_restart.destroy()
@@ -301,7 +302,7 @@ class MainWin():
 		"""
 		Arrêt de l'enregistrement
 		"""
-		self.running = False
+		self.running.set(False)
 		self.server_event.clear()
 
 		self.duree_memo = int((datetime.datetime.now() - self.start_time).total_seconds())
@@ -395,7 +396,7 @@ class MainWin():
 		if os.path.exists(CALIBRATION_FILE):
 			os.remove(CALIBRATION_FILE)
 
-		self.is_calibrating = True
+		self.is_calibrating.set(True)
 		self.calibration_data = None
 
 		# Empty data queue
@@ -458,7 +459,7 @@ class MainWin():
 			json.dump(calibration_data, f)
 		
 		self.calibration_data = calibration_data
-		self.is_calibrating = False
+		self.is_calibrating.set(False)
 
 		print('Calibration complete')
 
@@ -474,8 +475,9 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 		self.comp_ns = manager.Namespace()
 		self.comp_ns.precision_var = 0.0
 		self.comp_ns.graph_queue = manager.Queue()
+		self.comp_ns.dataQueue = self.dataQueue
 
-		for k in ('running', 'is_comparaison', 'is_calibrating', 'dataQueue'):
+		for k in ('running', 'is_comparaison', 'is_calibrating'):
 			setattr(self.comp_ns, k, getattr(self, k)) # TODO - Graphs proxy
 
 		multiprocessing.Process(target=get_current_comp, args=(self.comp_ns, True,), daemon=True).start()
@@ -492,7 +494,7 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 	while True:
 
 		try:
-			if self.is_calibrating:
+			if self.is_calibrating.value:
 				# Don't take data during calibration
 				time.sleep(0.5)
 				continue
@@ -510,18 +512,17 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 			if len(data) > 100:
 				print('TOO MUCH DATA, dropping everything', len(data), flush=True)
 				continue
+			else:
+				if data:
+					add_data_sensors(self, data)
 
-			if data:
-				add_data_sensors(self, data)
-			# self.donne_recup_william(data)
-
-			if not self.running:
+			if not self.running.value:
 				continue
 
-			if self.is_comparaison:
+			if self.is_comparaison.value:
 				try:
 					# nom_th = perceptron.predict(data)
-					mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(310)
+					mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(2)
 
 					capteurs = {}
 
@@ -558,6 +559,7 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 
 				except Exception as e:
 					print(f'Erreur pendant la comparaison: {e}')
+					raise
 				
 		except EOFError:
 			return # Program is shutting down
