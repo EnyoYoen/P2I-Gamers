@@ -114,7 +114,7 @@ def get_mesure_list(idMvmt, db):
             flexion.append(mesure_simple)
 
     return [pression, flexion, mesures_vects]
-    
+
 if __name__ == "__main__":
     from database import Database
 
