@@ -181,6 +181,7 @@ class MainWin():
 		
 		self.bouton_start = tk.Button(self.root, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
+		self.root.bind('<space>', self.start)
 		self.bouton_start.grid(row=11, column=4)
 		
 		self.bouton_restart = tk.Button(self.root, image=self.img_start)
@@ -246,6 +247,7 @@ class MainWin():
 		
 		self.bouton_arret = tk.Button(self.root, image=self.img_stop)
 		self.bouton_arret.bind( '<Button-1>', self.arret)
+		self.root.bind('<space>', self.arret)
 		self.bouton_arret.grid(row=11, column=5)
 		
 		self.bouton_start.destroy()
@@ -312,6 +314,7 @@ class MainWin():
 		self.bouton_pause.destroy()
 		self.bouton_start = tk.Button(self.root, image=self.img_start)
 		self.bouton_start.bind('<Button-1>', self.start)
+		self.root.bind('<space>', self.start)
 		self.bouton_start.grid(row=11, column=4)
 		
 
@@ -343,7 +346,7 @@ class MainWin():
 		Affiche l'analyse comparative à partir de la base de donnée
 		'''
 		mvt_the = {}
-		name_predict = self.factor_to_label[perceptron.predict(self.mlp, perceptron.get_mesure_list(self.idMvt.value, self.db))]
+		name_predict = self.factor_to_label[perceptron.predict(self.mlp, perceptron.convert_to_sequence(perceptron.get_mesure_list(self.idMvt.value, self.db)))]
 		for li in self.db.list_mouvements_info(1) :
 			id = li.idMvt
 			name = li.name
