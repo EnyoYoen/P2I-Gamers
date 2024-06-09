@@ -47,6 +47,9 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 			idDonneeMouvement = self.idMvt.value
 		except AttributeError:
 			idDonneeMouvement = 1
+		except Exception:
+			# Program has ended
+			return
 
 		simples, vects = [], []
 		for packet in post_body:

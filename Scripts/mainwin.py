@@ -384,11 +384,12 @@ class MainWin():
 		self.precision_var.set(f'{self.precision_var_proxy} %')
 
 		while not self.graph_queue.empty():
-			data = self.graph_queue.get()
-			if data[0] is None and data[1] == 'UPDATE':
-				self.graphs.update(data[2])
-			else:
-				self.graphs.add_data(*data)
+			packet = self.graph_queue.get()
+			for data in packet:
+				if data[0] is None and data[1] == 'UPDATE':
+					self.graphs.update(data[2])
+				else:
+					self.graphs.add_data(*data)
 
 		self.graphs.plot()
 
@@ -491,6 +492,8 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 	# 	except queue.Empty:
 	# 		break
 
+	convert_date = lambda i: datetime.datetime.strptime(i, '%Y-%m-%d %H:%M:%S.%f').timestamp()
+
 	while True:
 
 		try:
@@ -501,25 +504,29 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 
 			data = [self.dataQueue.get()]
 			
+			counter = 0
 			while True: # Get all data from queue
 				try:
-					data.append(self.dataQueue.get_nowait())
+					mesure = self.dataQueue.get_nowait()
+					counter += 1
+					if time.time() - convert_date(mesure.dateCreation) > 10: # Don't save old data
+						continue
+					data.append(mesure)
 				except queue.Empty:
 					break
 				# if len(data) >= 100:
 				# 	break
 
+			if not data:
+				continue
+
 			if len(data) > 100:
 				print('TOO MUCH DATA, dropping everything', len(data), flush=True)
 				continue
 			else:
-				if data:
-					add_data_sensors(self, data)
+				add_data_sensors(self, data)
 
-			if not self.running.value:
-				continue
-
-			if self.is_comparaison.value:
+			if self.running.value and self.is_comparaison.value:
 				try:
 					# nom_th = perceptron.predict(data)
 					mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(2)
@@ -546,10 +553,13 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 					print(f'{value=}')
 					self.precision_var = value
 		
-					self.graph_queue.put(('line2', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
-					self.graph_queue.put(('line2', 2, ([datetime.datetime.now().timestamp()], [100]), 1))
-					self.graph_queue.put(('line2', 3, ([datetime.datetime.now().timestamp()], [0]), 1))
-					self.graph_queue.put(('boxplot', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
+					packet = []
+					packet.append(('line2', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
+					packet.append(('line2', 2, ([datetime.datetime.now().timestamp()], [100]), 1))
+					packet.append(('line2', 3, ([datetime.datetime.now().timestamp()], [0]), 1))
+					packet.append(('boxplot', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
+
+					self.graph_queue.put(packet)
 	
 					# self.graphs.add_data('line2', 1, [datetime.datetime.now().timestamp()], [value], value_limit=20)
 					# self.graphs.add_data('line2', 2, [datetime.datetime.now().timestamp()], [100], limit=1) # Prevent resize
@@ -562,25 +572,30 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 					raise
 				
 		except EOFError:
-			return # Program is shutting down
+			break # Program is shutting down
 		except BrokenPipeError:
-			return # Same
+			break # Same
 		except multiprocessing.managers.RemoteError:
-			return # Same
+			break # Same
+	print('Stopped comparing')
 
 def add_data_sensors(self, liste:list):
 	convert_date = lambda i: datetime.datetime.strptime(i, '%Y-%m-%d %H:%M:%S.%f').timestamp()
+
+	packet = []
+
 	for obj in liste:
 		try:
 			if isinstance(obj, MesureSimple):
 				# if obj.idCapteur < 6: continue
 				now = convert_date(obj.dateCreation)
 				# self.graphs.add_data('line', obj.idCapteur, [now], [obj.valeur], value_limit=now-20) # last 20 sec
-				self.graph_queue.put(('line', obj.idCapteur, ([now], [obj.valeur]), None, now-20))
-
 				off = 1
-				self.graph_queue.put(('line', 11, ([now], [0]), 1)) # prevent auto-resize
-				self.graph_queue.put(('line', 12, ([now], [off]), 1))
+
+				packet.append(('line', obj.idCapteur, ([now], [obj.valeur]), None, now-20))
+
+				packet.append(('line', 11, ([now], [0]), 1)) # prevent auto-resize
+				packet.append(('line', 12, ([now], [off]), 1))
 
 				# self.graphs.add_data('line', 11, [now], [0], limit=1) # prevent auto-resize
 				# self.graphs.add_data('line', 12, [now], [off], limit=1)
@@ -588,23 +603,26 @@ def add_data_sensors(self, liste:list):
 			if isinstance(obj, MesureVect):
 				if obj.idCapteur >= 17 and obj.idCapteur%3==2:
 					# self.graphs.add_data('3D', obj.idCapteur, [obj.X, 0], [obj.Y, 0], [obj.Z, 0], limit=2)
-					self.graph_queue.put(('3D', obj.idCapteur, ([obj.X, 0], [obj.Y, 0], [obj.Z, 0]), 2))
-
-
 					off = 1
+
+					packet.append(('3D', obj.idCapteur, ([obj.X, 0], [obj.Y, 0], [obj.Z, 0]), 2))
+
 					# self.graphs.add_data('3D', 1, *[[-off]]*3, limit=1) # prevent auto-resize
 					# self.graphs.add_data('3D', 2, *[[off]]*3, limit=1)
-					self.graph_queue.put(('3D', 1, [[-off]]*3, 1)) # prevent auto-resize
-					self.graph_queue.put(('3D', 2, [[off]]*3, 1))
+					packet.append(('3D', 1, [[-off]]*3, 1)) # prevent auto-resize
+					packet.append(('3D', 2, [[off]]*3, 1))
 		except multiprocessing.managers.RemoteError:
 			# Program has ended
 			return
 
-	self.graph_queue.put((None, 'UPDATE', 'line'))
-	self.graph_queue.put((None, 'UPDATE', '3D'))
+	packet.append((None, 'UPDATE', 'line'))
+	packet.append((None, 'UPDATE', '3D'))
+ 
+	self.graph_queue.put(packet)
+
 	# self.graphs.update('line')
 	# self.graphs.update('3D')
 	# self.graphs.plot()
 
 if __name__ == "__main__":
-	fen = MainWin(19) #1 admin, #10 test #19 test_teacher #20 test_eleve
+		fen = MainWin(19) #1 admin, #10 test #19 test_teacher #20 test_eleve
