@@ -239,7 +239,7 @@ class MainWin():
 		Démarrage de l'enregistrement, création boutons pause et arret
 		"""
 		self.running.set(True)
-		now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+		now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
 		self.idMvt.set(self.db.add_movement_data(self.user.idUtilisateur, 1, now, None))
 		self.server_event.set()
 
@@ -524,39 +524,32 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 			else:
 				add_data_sensors(self, data)
 
-			continue
 			if self.running.value and self.is_comparaison.value:
 				try:
-					data_mlp = perceptron.convert_to_sequence(data)
-					print(data_mlp)
-					# nom_th = perceptron.predict(data)
-					mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(2)
+					data = perceptron.get_mesure_list(self.idMvt.value, db)
+					label = perceptron.convert_to_sequence(data)
 
-					try:
-						capteurs = {}
+					mouvements = db.list_mouvements_info(1)
 
-						data_th = {}
-						data_exp = {}
-						for mesure_cat, mesures in [(data_exp, data), (data_th, itertools.chain(mesures_vect, mesures_simple))]:
-							for mesure in mesures:
-								idCapteur = mesure.idCapteur
-								if idCapteur not in capteurs:
-									capteur = db.get_capteur(idCapteur)
-									capteurs[idCapteur] = capteur.type
+					for mouvement in mouvements:
+						if mouvement.name == label:
+							idMvtTh = mouvement.idMvt
+							break
+					else:
+						idMvtTh = None
 
-									cat = capteurs[idCapteur]
-									if cat not in data_exp:
-										data_exp[cat] = []
+					if idMvtTh is not None:
+						mvmt_info_exp, mesures_simple_exp, mesures_vect_exp = db.get_mouvement(self.idMvt.value)
 
-									mesure_cat[cat].append(mesure)
+						try:
+							# value = cp.comparaison_direct(data_th, data_exp)
+							value = cp.comparaison_direct2(mesures_simple_exp, mesures_vect_exp, idMvtTh)
 
-						value = cp.comparaison_direct(data_th, data_exp)
-
-						print(f'{value=}')
-						self.precision_var = value
-					except Exception as e:
-						print(f'Erreur pendant la comparaison: {e}')
-						raise
+							print(f'{value=}')
+							self.precision_var = value
+						except Exception as e:
+							print(f'Erreur pendant la comparaison: {e}')
+							raise
 
 					packet = []
 					packet.append(('line2', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
