@@ -41,7 +41,7 @@ class MainWin():
 		self.user = self.db.get_user(user_id)
 		self.root = tk.Tk()
 		
-		# self.mlp = perceptron.load_MLP()
+		self.mlp, self.factor_to_label = perceptron.load_MLP()
 		self.typesCapteurs = {}
 
 		for type in self.db.list_type_capteurs():
@@ -240,15 +240,6 @@ class MainWin():
 		Démarrage de l'enregistrement, création boutons pause et arret
 		"""
 		self.running.set(True)
-		now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-		self.idMvt.set(self.db.add_movement_data(self.user.idUtilisateur, 1, now, None))
-		self.server_event.set()
-
-		while True: # Clear the queue
-			try:
-				self.dataQueue.get_nowait()
-			except queue.Empty:
-				break
 
 		self.bouton_pause = tk.Button(self.root, image=self.img_pause)
 		self.bouton_pause.bind('<Button-1>', self.pause)
@@ -262,6 +253,15 @@ class MainWin():
 		self.bouton_start.destroy()
 		self.start_time = datetime.datetime.now()
 		self.update_time()
+
+		self.idMvt.set(self.db.add_movement_data(self.user.idUtilisateur, 1, self.start_time.strftime('%Y-%m-%d %H:%M:%S.%f'), None))
+
+		while True: # Clear the queue
+			try:
+				self.dataQueue.get_nowait()
+			except queue.Empty:
+				break
+		self.server_event.set()
 
 	def update_time(self):
 		"""
@@ -345,10 +345,8 @@ class MainWin():
 		'''
 		Affiche l'analyse comparative à partir de la base de donnée
 		'''
-		# à adapter avec l'apprentissage 
-		mvt_exp = self.db.get_mesure_vect(self.server_event.idMvt.value)
 		mvt_the = {}
-		name_predict = str(perceptron.predict(mvt_exp)) #ajouter mlp
+		name_predict = self.factor_to_label[perceptron.predict(self.mlp, perceptron.get_mesure_list(self.server_event.idMvt, self.db))]
 		for li in self.db.list_mouvements_info(1) :
 			id = li.idMvt
 			name = li.name
@@ -480,7 +478,7 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 		self.comp_ns.graph_queue = manager.Queue()
 		self.comp_ns.dataQueue = self.dataQueue
 
-		for k in ('running', 'is_comparaison', 'is_calibrating'):
+		for k in ('running', 'is_comparaison', 'is_calibrating', 'idMvt'):
 			setattr(self.comp_ns, k, getattr(self, k)) # TODO - Graphs proxy
 
 		multiprocessing.Process(target=get_current_comp, args=(self.comp_ns, True,), daemon=True).start()
@@ -505,7 +503,7 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 				continue
 
 			data = [self.dataQueue.get()]
-			
+
 			counter = 0
 			while True: # Get all data from queue
 				try:
@@ -527,39 +525,36 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 			else:
 				add_data_sensors(self, data)
 
-			continue
 			if self.running.value and self.is_comparaison.value:
 				try:
-					data_mlp = perceptron.convert_to_sequence(data)
-					print(data_mlp)
-					# nom_th = perceptron.predict(data)
-					mvmt_info, mesures_simple, mesures_vect = db.get_mouvement(2)
-
 					try:
-						capteurs = {}
-
-						data_th = {}
-						data_exp = {}
-						for mesure_cat, mesures in [(data_exp, data), (data_th, itertools.chain(mesures_vect, mesures_simple))]:
-							for mesure in mesures:
-								idCapteur = mesure.idCapteur
-								if idCapteur not in capteurs:
-									capteur = db.get_capteur(idCapteur)
-									capteurs[idCapteur] = capteur.type
-
-									cat = capteurs[idCapteur]
-									if cat not in data_exp:
-										data_exp[cat] = []
-
-									mesure_cat[cat].append(mesure)
-
-						value = cp.comparaison_direct(data_th, data_exp)
-
-						print(f'{value=}')
-						self.precision_var = value
+						data = perceptron.get_mesure_list(self.idMvt.value, db)
+						label = perceptron.convert_to_sequence(data)
 					except Exception as e:
-						print(f'Erreur pendant la comparaison: {e}')
+						print(f'Erreur du perceptron: {e}')
 						raise
+
+					mouvements = db.list_mouvements_info(1)
+
+					for mouvement in mouvements:
+						if mouvement.name == label:
+							idMvtTh = mouvement.idMvt
+							break
+					else:
+						idMvtTh = None
+
+					if idMvtTh is not None:
+						mvmt_info_exp, mesures_simple_exp, mesures_vect_exp = db.get_mouvement(self.idMvt.value)
+
+						try:
+							# value = cp.comparaison_direct(data_th, data_exp)
+							value = cp.comparaison_direct2(mesures_simple_exp, mesures_vect_exp, idMvtTh)
+
+							print(f'{value=}')
+							self.precision_var = value
+						except Exception as e:
+							print(f'Erreur pendant la comparaison: {e}')
+							raise
 
 					packet = []
 					packet.append(('line2', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
@@ -576,7 +571,8 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 					# self.graphs.add_data('boxplot', 1, [datetime.datetime.now().timestamp()], [value], value_limit=20)
 
 				except Exception as e:
-					print(f'Erreur pendant la comparaison: {e}')
+					print(f'Erreur apres la comparaison: {e}')
+					pass
 
 		except EOFError:
 			break # Program is shutting down

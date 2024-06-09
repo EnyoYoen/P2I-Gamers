@@ -70,13 +70,13 @@ def convert_to_sequence(mesures):
     return array
 
 def train_MLP(data):
-    train_data, test_data = train_test_split(data, test_size=0.4, random_state=1)
+    train_data, test_data = train_test_split(data, test_size=0.2, random_state=1)
     train = train_data.iloc[:,-1:]
     train_labels = train_data.iloc[:,-1:]
     test = test_data.iloc[:,-1:]
     test_labels = test_data.iloc[:,-1:]
 
-    mlp = MLPClassifier(hidden_layer_sizes = (10, 20), random_state=1, max_iter=1000).fit(train, train_labels)
+    mlp = MLPClassifier(hidden_layer_sizes = (10, 20), random_state=1, max_iter=500).fit(train, train_labels)
     pred = mlp.predict(test.loc[:,:])
 
     cm = confusion_matrix(test_labels, pred, labels=[0, 1])
@@ -95,50 +95,48 @@ def predict(mlp, data):
 
 def save_MLP(mlp, filename = 'MLP.pkl'):
     with open(filename, 'wb') as fid:
-        pickle.dump(mlp, fid)    
+        pickle.dump(mlp, fid)
 
 def load_MLP(filename = 'MLP.pkl'):
     with open(filename, 'rb') as fid:
         return pickle.load(fid)
-    
+
+def get_mesure_list(idMvmt, db):
+    mesures_simples = db.get_mesure_simple(idMvmt)
+    mesures_vects = db.get_mesure_vect(idMvmt)
+
+    pression = []
+    flexion = []
+    for mesure_simple in mesures_simples:
+        if mesure_simple.idCapteur < 6:
+            pression.append(mesure_simple)
+        else:
+            flexion.append(mesure_simple)
+
+    return [pression, flexion, mesures_vects]
+
 if __name__ == "__main__":
     from database import Database
 
     db = Database()
 
-    def get_mesure_list(idMvmt, db):
-        mesures_simples = db.get_mesure_simple(idMvmt)
-        mesures_vects = db.get_mesure_vect(idMvmt)
+    labels = []
+    mouvements_data = []
 
-        pression = []
-        flexion = []
-        for mesure_simple in mesures_simples:
-            if mesure_simple.idCapteur < 6:
-                pression.append(mesure_simple)
-            else:
-                flexion.append(mesure_simple)
+    mouvements = db.list_mouvements()
+    for mouvement in mouvements:
+        nom = mouvement.name
+        if nom is not None:
+            labels.append(mouvement.name)
+            mouvements_data.append(convert_to_sequence(get_mesure_list(mouvement.idMvt, db)).flatten())
 
-        return [pression, flexion, mesures_vects]
+    df = pd.DataFrame(mouvements_data)
+    df['label'] = pd.Series(labels).factorize()[0]
 
-    b1 = convert_to_sequence(get_mesure_list(307, db)).flatten()
-    b2 = convert_to_sequence(get_mesure_list(302, db)).flatten()
-    b3 = convert_to_sequence(get_mesure_list(303, db)).flatten()
-    b4 = convert_to_sequence(get_mesure_list(312, db)).flatten()
-    b5 = convert_to_sequence(get_mesure_list(313, db)).flatten()
-    b6 = convert_to_sequence(get_mesure_list(314, db)).flatten()
-
-    c1 = convert_to_sequence(get_mesure_list(304, db)).flatten()
-    c2 = convert_to_sequence(get_mesure_list(305, db)).flatten()
-    c3 = convert_to_sequence(get_mesure_list(306, db)).flatten()
-    c4 = convert_to_sequence(get_mesure_list(315, db)).flatten()
-    c5 = convert_to_sequence(get_mesure_list(316, db)).flatten()
-    c6 = convert_to_sequence(get_mesure_list(317, db)).flatten()
-
-    t1 = convert_to_sequence(get_mesure_list(309, db)).flatten()
-    t2 = convert_to_sequence(get_mesure_list(310, db)).flatten()
-    t3 = convert_to_sequence(get_mesure_list(311, db)).flatten()
-
-    df = pd.DataFrame([b1, b2, b3, b4, b5, b6, c1, c2, c3, c4, c5, c6, t1, t2, t3])
-    df['label'] = [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2]
-
-    train_MLP(df)
+    mlp = train_MLP(df)
+    unique_labels = np.unique(labels)
+    unique_factors = np.unique(pd.Series(labels).factorize()[0])
+    factor_to_label = {}
+    for i in range(len(unique_labels)):
+        factor_to_label[unique_factors[i]] = unique_labels[i]
+    save_MLP((mlp, factor_to_label))
