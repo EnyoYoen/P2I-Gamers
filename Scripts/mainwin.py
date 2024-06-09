@@ -12,6 +12,7 @@ import time
 import tkinter as tk
 import itertools
 from PIL import Image, ImageTk
+import ctypes
 
 from secret import CALIBRATION_FILE
 
@@ -91,14 +92,16 @@ class MainWin():
 
 		#image du logo
 		self.img_logo_pil = Image.open('Scripts/images/logo.png')
-		self.img_logo_resize = self.img_logo_pil.resize((34, 26), Image.LANCZOS)
+		self.img_logo_resize = self.img_logo_pil.resize((50, 30), Image.LANCZOS)
 		self.img_logo = ImageTk.PhotoImage(self.img_logo_resize)
 		self.label_logo = tk.Label(self.root, image=self.img_logo)
 		self.label_logo.grid(row=0, column=4)
 
 		#icone de la fenetre
-		self.icon_image = tk.PhotoImage(file='Scripts/images/logo.png')
-		self.root.iconphoto(False, self.icon_image)
+		self.img_logo_resize = self.img_logo_pil.resize((100, 85), Image.LANCZOS)
+		self.icon_image = ImageTk.PhotoImage(self.img_logo_resize)
+		self.root.iconphoto(True, self.icon_image)
+		ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(u'id')
 
 		#Label tout en haut
 		self.title_font = tk.font.Font(family="Bahnschrift SemiBold Condensed", size=16)
@@ -573,9 +576,11 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 					else:
 						idMvtTh = 329
 
+					print(f'{idMvtTh=} {self.idMvt.value=}')
 					if idMvtTh is not None:
 						mesures_simple_exp, mesures_vect_exp = db.get_mesure_simple(self.idMvt.value), db.get_mesure_vect(self.idMvt.value)
 
+						print(len(mesures_simple_exp), len(mesures_vect_exp))
 						if len(mesures_simple_exp) != 0 and len(mesures_vect_exp) != 0:
 
 							try:
