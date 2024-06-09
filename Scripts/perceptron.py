@@ -134,4 +134,9 @@ if __name__ == "__main__":
     df['label'] = pd.Series(labels).factorize()[0]
 
     mlp = train_MLP(df)
-    save_MLP((mlp, (labels, pd.Series(labels).factorize()[0])))
+    unique_labels = np.unique(labels)
+    unique_factors = np.unique(pd.Series(labels).factorize()[0])
+    factor_to_label = {}
+    for i in range(len(unique_labels)):
+        factor_to_label[unique_factors[i]] = unique_labels[i]
+    save_MLP((mlp, factor_to_label))
