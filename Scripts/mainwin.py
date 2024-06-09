@@ -570,7 +570,7 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 				except Exception as e:
 					print(f'Erreur pendant la comparaison: {e}')
 					raise
-				
+
 		except EOFError:
 			break # Program is shutting down
 		except BrokenPipeError:
