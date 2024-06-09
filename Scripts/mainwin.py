@@ -576,9 +576,11 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 					else:
 						idMvtTh = 329
 
+					print(f'{idMvtTh=} {self.idMvt.value=}')
 					if idMvtTh is not None:
-						mvmt_info_exp, mesures_simple_exp, mesures_vect_exp = db.get_mouvement(self.idMvt.value)
+						mesures_simple_exp, mesures_vect_exp = db.get_mesure_simple(self.idMvt.value), db.get_mesure_vect(self.idMvt.value)
 
+						print(len(mesures_simple_exp), len(mesures_vect_exp))
 						if len(mesures_simple_exp) != 0 and len(mesures_vect_exp) != 0:
 
 							try:

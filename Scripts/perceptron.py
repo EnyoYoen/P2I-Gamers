@@ -27,7 +27,7 @@ def convert_to_sequence(mesures):
         inertie_offset = 0
         mesures_per_second = 10
         i_s = 0
-        print(len(inertie_data))
+
         for i in range(0, len(inertie_data), 3):
             time = inertie_data[i].dateCreation
             
