@@ -126,7 +126,6 @@ if __name__ == "__main__":
     from database import Database
 
     db = Database()
-    
     labels = []
     mouvements_data = []
 
