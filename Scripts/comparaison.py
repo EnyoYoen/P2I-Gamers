@@ -122,9 +122,34 @@ def formatageV(dico,mesures_vect):
         dico["Centrale inertielle"].append(MesureVect.from_raw((0,0,delta.total_seconds(), mvt.X, mvt.Y, mvt.Z)))
     return dico
 
+def formatageS_exp(dico, mesures_simple):
+    debut  = mesures_simple[0].dateCreation
+    for mvt in mesures_simple:
+        dt = mvt.dateCreation
+        delta = (dt-debut)
+        d = datetime.now().timestamp() - 4
+        if mvt.idCapteur > 5:
+            if dt.timestamp() >= d:
+                dico["Flexion"].append(MesureSimple.from_raw((0,0,delta.total_seconds(), mvt.valeur)))
+        if mvt.idCapteur <= 5:
+            if dt.timestamp() >= d:
+                dico["FlexiForce"].append(MesureSimple.from_raw((0,0,delta.total_seconds(), mvt.valeur)))
+    return dico
+
+def formatageV_exp(dico,mesures_vect):
+    debut  = mesures_vect[0].dateCreation
+    fin = mesures_vect[-1].dateCreation
+    for mvt in mesures_vect:
+        dt = mvt.dateCreation
+        delta = (dt - debut)
+        d = datetime.now().timestamp() - 4
+        if dt.timestamp() >= d:
+            dico["Centrale inertielle"].append(MesureVect.from_raw((0,0,delta.total_seconds(), mvt.X, mvt.Y, mvt.Z)))
+    return dico
+
 def comparaison_direct2(mesures_simple,mesures_vect, idMvt):  
     data = ['FlexiForce', 'Flexion', 'Centrale inertielle']
-    mvmt_info, mesures_simple_th, mesures_vect_th = db().get_mouvement(idMvt)
+    mvt_info, mesures_simple_th, mesures_vect_th = db().get_mouvement(idMvt)
 
     dico_th = {}
     dico_th["FlexiForce"] = []
@@ -140,8 +165,8 @@ def comparaison_direct2(mesures_simple,mesures_vect, idMvt):
     dico_exp["FlexiForce"] = []
     dico_exp["Flexion"] = []
     dico_exp["Centrale inertielle"] = []
-    dico_exp = formatageS(dico_exp, mesures_simple)
-    dico_exp = formatageV(dico_exp, mesures_vect)
+    dico_exp = formatageS_exp(dico_exp, mesures_simple)
+    dico_exp = formatageV_exp(dico_exp, mesures_vect)
     # print(dico_th["Flexion"])
     # print(dico_exp["Flexion"])
     
@@ -150,6 +175,7 @@ def comparaison_direct2(mesures_simple,mesures_vect, idMvt):
         err_i = 100
         res = []
         mvt_exp_inter = []
+        print(mvt_exp)
         ti = mvt_exp[0].dateCreation
         tf = mvt_exp[-1].dateCreation
         mvt_th = dico_th[type]
@@ -158,7 +184,7 @@ def comparaison_direct2(mesures_simple,mesures_vect, idMvt):
         
         while mvt_th[i].dateCreation < ti :
             i += 1
-        while ti <= mvt_th[i].dateCreation <= tf:
+        while ti < mvt_th[i].dateCreation < tf:
             mvt_th_compare.append(mvt_th[i])
             i += 1
         if type == 'Centrale inertielle':
@@ -171,8 +197,8 @@ def comparaison_direct2(mesures_simple,mesures_vect, idMvt):
             if mvt_exp != 0 :  
                 for i in range(len(mvt_exp)):
                     x1 = float(mvt_th[i].X)+0.0000000000000000000001
-                    y1 = float(mvt_th[i].Y)+0.000000000000000000001
-                    z1 = float(mvt_th[i].Z)+0.000000000000000000001
+                    y1 = float(mvt_th[i].Y)+0.0000000000000000000001
+                    z1 = float(mvt_th[i].Z)+0.0000000000000000000001
                     x2 = float(mvt_exp[i].X)
                     y2 = float(mvt_exp[i].Y)
                     z2 = float(mvt_exp[i].Z)
