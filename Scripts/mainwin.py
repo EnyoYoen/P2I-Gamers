@@ -529,7 +529,7 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 
 			if self.running.value and self.is_comparaison.value:
 				try:
-					USE_PERCEPTRON = False
+					USE_PERCEPTRON = True
 					if USE_PERCEPTRON:
 						try:
 							label = self.factor_to_label[perceptron.predict(
@@ -541,14 +541,18 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 							)))]
 						except Exception as e:
 							print(f'Erreur du perceptron: {e}')
-							raise
+							pass
+							label = None
 
-						mouvements = db.list_mouvements_info(1)
+						if label is not None:
+							mouvements = db.list_mouvements_info(1)
 
-						for mouvement in mouvements:
-							if mouvement.name == label:
-								idMvtTh = mouvement.idMvt
-								break
+							for mouvement in mouvements:
+								if mouvement.name == label:
+									idMvtTh = mouvement.idMvt
+									break
+							else:
+								idMvtTh = None
 						else:
 							idMvtTh = None
 					else:
