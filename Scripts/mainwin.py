@@ -538,7 +538,7 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 									perceptron.get_mesure_list(
 										self.idMvt.value, 
 										db
-							)))]
+							)).flatten())]
 						except Exception as e:
 							print(f'Erreur du perceptron: {e}')
 							pass
