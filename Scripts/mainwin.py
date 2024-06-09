@@ -40,7 +40,7 @@ class MainWin():
 		self.user = self.db.get_user(user_id)
 		self.root = tk.Tk()
 		
-		self.mlp = perceptron.load_MLP()
+		# self.mlp = perceptron.load_MLP()
 		self.typesCapteurs = {}
 
 		for type in self.db.list_type_capteurs():
