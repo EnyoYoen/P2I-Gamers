@@ -133,4 +133,5 @@ if __name__ == "__main__":
     df = pd.DataFrame(mouvements_data)
     df['label'] = pd.Series(labels).factorize()[0]
 
-    train_MLP(df)
+    mlp = train_MLP(df)
+    save_MLP(mlp)
