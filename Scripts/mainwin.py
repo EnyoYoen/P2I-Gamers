@@ -41,7 +41,7 @@ class MainWin():
 		self.user = self.db.get_user(user_id)
 		self.root = tk.Tk()
 		
-		# self.mlp = perceptron.load_MLP()
+		self.mlp, self.factor_to_label = perceptron.load_MLP()
 		self.typesCapteurs = {}
 
 		for type in self.db.list_type_capteurs():
@@ -342,10 +342,8 @@ class MainWin():
 		'''
 		Affiche l'analyse comparative à partir de la base de donnée
 		'''
-		# à adapter avec l'apprentissage 
-		mvt_exp = self.db.get_mesure_vect(self.server_event.idMvt.value)
 		mvt_the = {}
-		name_predict = str(perceptron.predict(mvt_exp)) #ajouter mlp
+		name_predict = self.factor_to_label[perceptron.predict(self.mlp, perceptron.get_mesure_list(self.server_event.idMvt, self.db))]
 		for li in self.db.list_mouvements_info(1) :
 			id = li.idMvt
 			name = li.name
