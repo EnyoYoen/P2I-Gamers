@@ -15,7 +15,10 @@ def convert_to_sequence(mesures):
     array = np.zeros((190 * 5, 1))
 
     start_time = inertie_data[0].dateCreation
-    end_time = start_time.replace(second=start_time.second - 1)
+    if start_time.second == 0:
+        end_time = start_time.replace(minute=start_time.minute - 1, second=59)
+    else:    
+        end_time = start_time.replace(second=start_time.second - 1)
     seconds = 0
     count = 0
     pression_offset = 0
@@ -70,14 +73,15 @@ def convert_to_sequence(mesures):
     return array
 
 def train_MLP(data):
-    train_data, test_data = train_test_split(data, test_size=0.2, random_state=1)
-    train = train_data.iloc[:,-1:]
+    train_data, test_data = train_test_split(data, test_size=0.5, random_state=1)
+    train = train_data.iloc[:,:-1]
     train_labels = train_data.iloc[:,-1:]
-    test = test_data.iloc[:,-1:]
+    test = test_data.iloc[:,:-1]
     test_labels = test_data.iloc[:,-1:]
 
-    mlp = MLPClassifier(hidden_layer_sizes = (10, 20), random_state=1, max_iter=500).fit(train, train_labels)
+    mlp = MLPClassifier(hidden_layer_sizes = (10, 20), random_state=1, max_iter=1000).fit(train, train_labels)
     pred = mlp.predict(test.loc[:,:])
+    print(pred)
 
     cm = confusion_matrix(test_labels, pred, labels=[0, 1])
     cm = cm/len(pred)
