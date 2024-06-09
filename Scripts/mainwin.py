@@ -41,7 +41,7 @@ class MainWin():
 		self.user = self.db.get_user(user_id)
 		self.root = tk.Tk()
 		
-		# self.mlp = perceptron.load_MLP()
+		self.mlp = perceptron.load_MLP()
 		self.typesCapteurs = {}
 
 		for type in self.db.list_type_capteurs():
@@ -239,15 +239,6 @@ class MainWin():
 		Démarrage de l'enregistrement, création boutons pause et arret
 		"""
 		self.running.set(True)
-		now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-		self.idMvt.set(self.db.add_movement_data(self.user.idUtilisateur, 1, now, None))
-		self.server_event.set()
-
-		while True: # Clear the queue
-			try:
-				self.dataQueue.get_nowait()
-			except queue.Empty:
-				break
 
 		self.bouton_pause = tk.Button(self.root, image=self.img_pause)
 		self.bouton_pause.bind('<Button-1>', self.pause)
@@ -260,6 +251,15 @@ class MainWin():
 		self.bouton_start.destroy()
 		self.start_time = datetime.datetime.now()
 		self.update_time()
+
+		self.idMvt.set(self.db.add_movement_data(self.user.idUtilisateur, 1, self.start_time.strftime('%Y-%m-%d %H:%M:%S.%f'), None))
+
+		while True: # Clear the queue
+			try:
+				self.dataQueue.get_nowait()
+			except queue.Empty:
+				break
+		self.server_event.set()
 
 	def update_time(self):
 		"""
@@ -477,7 +477,7 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 		self.comp_ns.graph_queue = manager.Queue()
 		self.comp_ns.dataQueue = self.dataQueue
 
-		for k in ('running', 'is_comparaison', 'is_calibrating'):
+		for k in ('running', 'is_comparaison', 'is_calibrating', 'idMvt'):
 			setattr(self.comp_ns, k, getattr(self, k)) # TODO - Graphs proxy
 
 		multiprocessing.Process(target=get_current_comp, args=(self.comp_ns, True,), daemon=True).start()
@@ -502,7 +502,7 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 				continue
 
 			data = [self.dataQueue.get()]
-			
+
 			counter = 0
 			while True: # Get all data from queue
 				try:
@@ -526,8 +526,12 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 
 			if self.running.value and self.is_comparaison.value:
 				try:
-					data = perceptron.get_mesure_list(self.idMvt.value, db)
-					label = perceptron.convert_to_sequence(data)
+					try:
+						data = perceptron.get_mesure_list(self.idMvt.value, db)
+						label = perceptron.convert_to_sequence(data)
+					except Exception as e:
+						print(f'Erreur du perceptron: {e}')
+						raise
 
 					mouvements = db.list_mouvements_info(1)
 
@@ -566,7 +570,8 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 					# self.graphs.add_data('boxplot', 1, [datetime.datetime.now().timestamp()], [value], value_limit=20)
 
 				except Exception as e:
-					print(f'Erreur pendant la comparaison: {e}')
+					print(f'Erreur apres la comparaison: {e}')
+					pass
 
 		except EOFError:
 			break # Program is shutting down

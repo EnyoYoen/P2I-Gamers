@@ -95,7 +95,7 @@ def predict(mlp, data):
 
 def save_MLP(mlp, filename = 'MLP.pkl'):
     with open(filename, 'wb') as fid:
-        pickle.dump(mlp, fid)    
+        pickle.dump(mlp, fid)
 
 def load_MLP(filename = 'MLP.pkl'):
     with open(filename, 'rb') as fid:
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     from database import Database
 
     db = Database()
-    
+
     labels = []
     mouvements_data = []
 

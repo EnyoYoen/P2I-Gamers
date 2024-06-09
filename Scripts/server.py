@@ -94,7 +94,10 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 			if is_event_set and idDonneeMouvement != -1:
 				print(f'Saving 1 packet, size: {len(post_body)}')
 
-				self.db.add_mesures_multiples(simples, vects)
+				try:
+					self.db.add_mesures_multiples(simples, vects)
+				except Exception as e:
+					print('Erreur durant l\'ajout des mesures:', e)
 
 				print(f'-> Done, took {time.time()-start}sec')
 
