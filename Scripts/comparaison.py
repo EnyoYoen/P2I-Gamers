@@ -51,7 +51,8 @@ def interpolation_vect(mvt_exp, mvt_th):
 def interpolation_simple(mvt_exp, mvt_th):
     inter = []
     j = 0
-    # print(mvt_exp)
+    print(len(mvt_th))
+    print(len(mvt_exp))
     for i in range(0,len(mvt_exp)):
         t1_th = mvt_th[j].dateCreation
         t1 = mvt_exp[i].dateCreation
@@ -60,22 +61,27 @@ def interpolation_simple(mvt_exp, mvt_th):
         # print(t1_th)
         if t1_th == t1:
             inter.append(MesureSimple.from_raw((0,0,t1,v1)))
-            # print(f"valeur gardée : {(t1,v1)}")
+            print(f"valeur gardée : {(t1,v1)}")
             j += 1
         else:
             while t1_th < t1:
+                if j == (len(mvt_th)-2):
+                    break
                 t1_th = mvt_th[j].dateCreation
                 v2 = mvt_exp[i-1].valeur
                 t = t1_th
                 v = (v1 + v2)/2
-                print(v)
+                # print(v)
                 inter.append(MesureSimple.from_raw((0,0,t,v)))
                 j += 1
                 t1_th = mvt_th[j].dateCreation
                 print(f"valeur ajoutée : {(t,v)}")
+                if j == (len(mvt_th)-2):
+                    break
+                
             inter.append(MesureSimple.from_raw((0,0,t1_th,v1)))
             print(f"valeur gardée : {(t1_th,v1)}")
-            j += 1   
+            j += 1  
     inter.sort(key=lambda e: e.dateCreation)
     return inter
 
@@ -97,19 +103,24 @@ def interpolation_simple(mvt_exp, mvt_th):
 #         drv.append((0,0,dt,dx,dy,dz))
 #     return drv
 
-def formatageS(dico_th, mesures_simple):
-
+def formatageS(dico, mesures_simple):
+    debut  = mesures_simple[0].dateCreation
     for mvt in mesures_simple:
+        dt = mvt.dateCreation
+        delta = (dt-debut)
         if mvt.idCapteur > 5:
-            dico_th["Flexion"].append(MesureSimple.from_raw((0,0,0,mvt.dateCreation.timestamp(), mvt.valeur)))
+            dico["Flexion"].append(MesureSimple.from_raw((0,0,delta.total_seconds(), mvt.valeur)))
         if mvt.idCapteur <= 5:
-            dico_th["FlexiForce"].append(MesureSimple.from_raw((0,0,0,mvt.dateCreation.timestamp(), mvt.valeur)))
-    return dico_th
+            dico["FlexiForce"].append(MesureSimple.from_raw((0,0,delta, mvt.valeur)))
+    return dico
 
-def formatageV(dico_th,mesures_vect):
+def formatageV(dico,mesures_vect):
+    debut  = mesures_vect[0].dateCreation
     for mvt in mesures_vect:
-        dico_th["Centrale inertielle"].append(MesureVect.from_raw((0,0,0,mvt.dateCreation.timestamp(), mvt.X, mvt.Y, mvt.Z)))
-    return dico_th
+        dt = mvt.dateCreation
+        delta = (dt - debut)
+        dico["Centrale inertielle"].append(MesureVect.from_raw((0,0,delta.total_seconds(), mvt.X, mvt.Y, mvt.Z)))
+    return dico
 
 def comparaison_direct2(mesures_simple,mesures_vect, idMvt):  
     data = ['FlexiForce', 'Flexion', 'Centrale inertielle']
@@ -131,7 +142,9 @@ def comparaison_direct2(mesures_simple,mesures_vect, idMvt):
     dico_exp["Centrale inertielle"] = []
     dico_exp = formatageS(dico_exp, mesures_simple)
     dico_exp = formatageV(dico_exp, mesures_vect)
-
+    # print(dico_th["Flexion"])
+    # print(dico_exp["Flexion"])
+    
     for type in data:
         mvt_exp = dico_exp[type]
         err_i = 100
@@ -142,97 +155,96 @@ def comparaison_direct2(mesures_simple,mesures_vect, idMvt):
         mvt_th = dico_th[type]
         mvt_th_compare = []  
         i = 0
-        if ti != 0:
-            while mvt_th[i].dateCreation < ti :
-                i += 1
-            while ti <= mvt_th[i].dateCreation <= tf:
-                mvt_th_compare.append(mvt_th[i])
-                i += 1
-            len = len(mvt_exp)
-            if len(mvt_exp) > len(mvt_th):
-                len = len(mvt_th)
-            if type == 'Centrale inertielle':
-                # mvt_exp_inter = interpolation_vect(mvt_exp, mvt_th_compare)
-                # mvt_exp = mvt_exp_inter
-                err_teta = []
-                box["teta"] = err_teta
-                err_phi = []
-                box["phi"] = err_phi
-                if mvt_exp != 0 :  
-                    for i in range(len):
-                        x1 = float(mvt_th[i].X)
-                        y1 = float(mvt_th[i].Y)
-                        z1 = float(mvt_th[i].Z)   
-                        x2 = float(mvt_exp[i].X)
-                        y2 = float(mvt_exp[i].Y)
-                        z2 = float(mvt_exp[i].Z)
+        
+        while mvt_th[i].dateCreation < ti :
+            i += 1
+        while ti <= mvt_th[i].dateCreation <= tf:
+            mvt_th_compare.append(mvt_th[i])
+            i += 1
+        if type == 'Centrale inertielle':
+            # mvt_exp_inter = interpolation_vect(mvt_exp, mvt_th_compare)
+            # mvt_exp = mvt_exp_inter
+            err_teta = []
+            box["teta"] = err_teta
+            err_phi = []
+            box["phi"] = err_phi
+            if mvt_exp != 0 :  
+                for i in range(len(mvt_exp)):
+                    x1 = float(mvt_th[i].X)+0.0000000000000000000001
+                    y1 = float(mvt_th[i].Y)+0.000000000000000000001
+                    z1 = float(mvt_th[i].Z)+0.000000000000000000001
+                    x2 = float(mvt_exp[i].X)
+                    y2 = float(mvt_exp[i].Y)
+                    z2 = float(mvt_exp[i].Z)
 
-                        r2 = sqrt((x2**2)+(y2**2)+(z2**2))
-                        teta2 = acos(z2/r2)
-                        phi2 = atan(y2/x2)
-                        r1 = sqrt((x1**2)+(y1**2)+(z1**2))
-                        teta1 = acos(z1/r1)
-                        phi1 = atan(y1/x1)
-                        err_t = 100*abs(teta1-teta2)/teta1
-                        err_p = 100*abs(phi1-phi2)/phi1
-                        err_teta.append(err_t)
-                        err_phi.append(err_p)
+                    r2 = sqrt((x2**2)+(y2**2)+(z2**2))
+                    teta2 = acos(z2/r2)
+                    phi2 = atan(y2/x2)
+                    r1 = sqrt((x1**2)+(y1**2)+(z1**2))
+                    print(r1)
+                    teta1 = acos(z1/r1)
+                    phi1 = atan(y1/x1)
+                    err_t = 100*abs(teta1-teta2)/teta1
+                    err_p = 100*abs(phi1-phi2)/phi1
+                    err_teta.append(err_t)
+                    err_phi.append(err_p)
 
-                        err_x = 100*abs(x1-x2)/x1
-                        err_y = 100*abs(y1-y2)/y1
-                        err_z = 100*abs(z1-z2)/z1
-                        moy = (err_x + err_y + err_z)/3
-                        res.append(moy)  
-                    err_f = np.mean(res)
-                    if err_f < err_i:
-                        err_i = err_f
-                    # else:
-                    #     return taux, box
-                resultat = 100-err_i
-                resultat = round(resultat, 2)
-                taux.append(float(resultat))
-            
-            elif type == 'FlexiForce':
-                # mvt_exp_inter = interpolation_simple(mvt_exp, mvt_th)
-                # mvt_exp = mvt_exp_inter
-                err_pression = []
-                box["pression"] = err_pression
-                j = 0
-                if mvt_exp != 0 :   
-                    for i in range(len):
-                        v1 = mvt_th[i].valeur    
-                        v2 = mvt_exp[i].valeur
-                        err = 100*abs(v1-v2)
-                        err_pression.append(err)
-                        res.append(err)  
-                        j =+1 
-                    err_f = np.mean(res) 
-                    if err_f < err_i:
-                        err_i = err_f
-                resultat = 100-err_i
-                resultat = round(resultat, 2)
-                taux.append(float(resultat))
+                    err_x = 100*abs(x1-x2)/x1
+                    err_y = 100*abs(y1-y2)/y1
+                    err_z = 100*abs(z1-z2)/z1
+                    moy = (err_x + err_y + err_z)/3
+                    res.append(moy)  
+                err_f = np.mean(res)
+                if err_f < err_i:
+                    err_i = err_f
+                # else:
+                #     return taux, box
+            resultat = 100-err_i
+            resultat = round(resultat, 2)
+            taux.append(float(resultat))
+        
+        elif type == 'FlexiForce':
+            # mvt_exp_inter = interpolation_simple(mvt_exp, mvt_th_compare)
+            # mvt_exp = mvt_exp_inter
+            err_pression = []
+            box["pression"] = err_pression
+            j = 0
+            if mvt_exp != 0 :   
+                for i in range(len(mvt_exp)):
+                    v1 = mvt_th[i].valeur    
+                    v2 = mvt_exp[i].valeur
+                    err = 100*abs(v1-v2)
+                    err_pression.append(err)
+                    res.append(err)  
+                    j =+1 
+                err_f = np.mean(res) 
+                if err_f < err_i:
+                    err_i = err_f
+            resultat = 100-err_i
+            resultat = round(resultat, 2)
+            taux.append(float(resultat))
 
-            else:
-                # mvt_exp_inter = interpolation_simple(mvt_exp, mvt_th_compare)
-                # mvt_exp = mvt_exp_inter
-                err_flexion = []
-                box["flexion"] = err_flexion
-                j = 0
-                if mvt_exp != 0 :   
-                    for i in range(len):
-                        v1 = mvt_th[i].valeur    
-                        v2 = mvt_exp[i].valeur
-                        err = 100*abs(v1-v2)
-                        res.append(err) 
-                        err_flexion.append(err)  
-                        j += 1
-                    err_f = np.mean(res) 
-                    if err_f < err_i:
-                        err_i = err_f
-                resultat = 100-err_i
-                resultat = round(resultat, 2)
-                taux.append(float(resultat))
+        else:
+            # mvt_exp_inter = interpolation_simple(mvt_exp, mvt_th_compare)
+            # mvt_exp = mvt_exp_inter
+            err_flexion = []
+            box["flexion"] = err_flexion
+            j = 0
+            if mvt_exp != 0 :   
+                for i in range(len(mvt_exp)):
+                    v1 = mvt_th[i].valeur    
+                    v2 = mvt_exp[i].valeur
+                    err = 100*abs(v1-v2)
+                    res.append(err) 
+                    err_flexion.append(err)  
+                    j += 1
+                err_f = np.mean(res) 
+                if err_f < err_i:
+                    err_i = err_f
+            resultat = 100-err_i
+            resultat = round(resultat, 2)
+            taux.append(float(resultat))
+        print(taux)
         erreur = np.mean(taux)
     return erreur, box
 
@@ -492,7 +504,7 @@ if __name__ == "__main__":
     # plt.show()
     
     
-    mvmt_info, mesures_simple, mesures_vect = db().get_mouvement(303)
+    mvmt_info, mesures_simple, mesures_vect = db().get_mouvement(390)
 
-    err, box = comparaison_direct2(mesures_simple,mesures_vect, 307)
+    err, box = comparaison_direct2(mesures_simple,mesures_vect, 329)
     print(err)
