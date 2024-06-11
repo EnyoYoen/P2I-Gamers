@@ -39,6 +39,15 @@ data_th = {"aurevoir":MesureVect.from_raw_list([(0,3,10,9,8,1),(0,4,7,6,5,1.5),(
 
 class MainWin():
 	def __init__(self, user_id):
+		"""
+		Initializes the MainWin class.
+
+		Parameters:
+		- user_id (int): The ID of the user.
+
+		Returns:
+		None
+		"""
 		super().__init__()
 		self.db = Database()
 		self.user = self.db.get_user(user_id)
@@ -52,7 +61,7 @@ class MainWin():
 		self.capteurs = {}
 		for capteur in self.db.list_capteurs():
 			self.capteurs[capteur.idCapteur] = capteur
-   
+	
 		self.root.title('G.M.T.')
 		# récuperation de la résolution de l'écran
 		screen_width = self.root.winfo_screenwidth()
@@ -65,11 +74,7 @@ class MainWin():
 		self.is_comparaison = manager.Value('b', True)
 		self.running = manager.Value('b', False)
 
-		# self.f = Figure(figsize=(2,2), dpi=100)
-		# self.a = self.f.add_subplot(111)
-
 		self.creer_widgets()
-
 
 		self.data_server = DataServer()
 		for k in ('server_event', 'dataQueue', 'gui_data_queue', 'idMvt', 'calibration_data'):
@@ -223,8 +228,8 @@ class MainWin():
 		graphs_class = {
 			'line': LineGraph,
 			'3D': Graph3D,
-			'boxplot': BoxPlot,
-			'line2': LineGraph,
+			# 'boxplot': BoxPlot,
+			# 'line2': LineGraph,
 		}
 		kwargs = {
 			'3D': {'xlim': (-1, 1), 'ylim': (-1, 1), 'zlim': (-1, 1)}
@@ -464,9 +469,11 @@ class MainWin():
 
 		for ind, data in calibration_data.items():
 			if 11 <= ind:
-				vec = [sum(calibration_data[ind][i]) / len(calibration_data[ind][i]) for i in range(3)]
-				teta = math.atan(vec[1] / vec[0])
-				phi = math.acos(vec[2] / (vec[0]**2 + vec[1]**2 + vec[2]**2)**0.5) 
+				x, y, z = [sum(data[i]) / len(data[i]) for i in range(3)]
+				r = (x**2 + y**2 + z**2)**0.5
+
+				teta = math.atan(y / x)
+				phi = math.acos(z / r) 
 
 				calibration_data[ind] = [teta, phi]
 
@@ -480,7 +487,23 @@ class MainWin():
 
 
 # Multiprocessing functions
-def get_current_comp(self, thread=False): # TODO - Put this in a different process
+def get_current_comp(self, thread=False):
+	"""
+	Get the current comparison data.
+
+	Args:
+		self: The reference to the object.
+		thread (bool): Flag indicating whether to run the function in a separate thread.
+
+	Returns:
+		graph_queue (multiprocessing.Queue): A queue for storing graph data.
+		precision_var (multiprocessing.Value): A shared variable for storing the precision value.
+
+	Note:
+		This function is responsible for retrieving the current comparison data and updating the graph queue and precision variable.
+		If `thread` is set to True, the function will be executed in a separate thread.
+	"""
+
 	# /!\ Ici, self est juste la reference a l'objet, ce n'est pas une methode!
 	if not thread:
 		# self.update_plots()
@@ -573,30 +596,34 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 					else:
 						idMvtTh = 329
 
-					print(f'{idMvtTh=} {self.idMvt.value=}')
+					# print(f'{idMvtTh=} {self.idMvt.value=}')
 					if idMvtTh is not None:
 						mesures_simple_exp, mesures_vect_exp = db.get_mesure_simple(self.idMvt.value), db.get_mesure_vect(self.idMvt.value)
 
-						print(len(mesures_simple_exp), len(mesures_vect_exp))
-						if len(mesures_simple_exp) != 0 and len(mesures_vect_exp) != 0:
+						# print(len(mesures_simple_exp), len(mesures_vect_exp))
+						if len(mesures_simple_exp) == 0 or len(mesures_vect_exp) == 0:
+							db = Database()
+							mesures_simple_exp, mesures_vect_exp = db.get_mesure_simple(self.idMvt.value), db.get_mesure_vect(self.idMvt.value)
 
-							try:
-								# value = cp.comparaison_direct(data_th, data_exp)
-								value = cp.comparaison_direct2(mesures_simple_exp, mesures_vect_exp, idMvtTh)
+						try:
+							# value = cp.comparaison_direct(data_th, data_exp)
+							value, boxplot_data = cp.comparaison_direct2(mesures_simple_exp, mesures_vect_exp, idMvtTh)
 
-								print(f'{value=}')
-								self.precision_var.set(value)
-							except Exception as e:
-								print(f'Erreur pendant la comparaison: {e}')
-								pass
+							value = round(value, 2)
 
-							packet = []
-							packet.append(('line2', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
-							packet.append(('line2', 2, ([datetime.datetime.now().timestamp()], [100]), 1))
-							packet.append(('line2', 3, ([datetime.datetime.now().timestamp()], [0]), 1))
-							packet.append(('boxplot', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
+							# print(f'{value=}')
+							self.precision_var.set(value)
+						except Exception as e:
+							print(f'Erreur pendant la comparaison: {e}')
+							pass
 
-							self.graph_queue.put(packet)
+						packet = []
+						packet.append(('line2', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
+						packet.append(('line2', 2, ([datetime.datetime.now().timestamp()], [100]), 1))
+						packet.append(('line2', 3, ([datetime.datetime.now().timestamp()], [0]), 1))
+						packet.append(('boxplot', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
+
+						self.graph_queue.put(packet)
 	
 					# self.graphs.add_data('line2', 1, [datetime.datetime.now().timestamp()], [value], value_limit=20)
 					# self.graphs.add_data('line2', 2, [datetime.datetime.now().timestamp()], [100], limit=1) # Prevent resize
@@ -617,6 +644,15 @@ def get_current_comp(self, thread=False): # TODO - Put this in a different proce
 	print('Stopped comparing')
 
 def add_data_sensors(self, liste:list):
+	"""
+	Adds data from the given list of sensors to the graphs.
+
+	Args:
+		liste (list): A list of sensor objects.
+
+	Returns:
+		None
+	"""
 	convert_date = lambda i: datetime.datetime.strptime(i, '%Y-%m-%d %H:%M:%S.%f').timestamp()
 
 	packet = []
@@ -624,28 +660,18 @@ def add_data_sensors(self, liste:list):
 	for obj in liste:
 		try:
 			if isinstance(obj, MesureSimple):
-				# if obj.idCapteur < 6: continue
 				now = convert_date(obj.dateCreation)
-				# self.graphs.add_data('line', obj.idCapteur, [now], [obj.valeur], value_limit=now-20) # last 20 sec
 				off = 1
 
 				packet.append(('line', obj.idCapteur, ([now], [obj.valeur]), None, now-20))
-
 				packet.append(('line', 11, ([now], [0]), 1)) # prevent auto-resize
 				packet.append(('line', 12, ([now], [off]), 1))
 
-				# self.graphs.add_data('line', 11, [now], [0], limit=1) # prevent auto-resize
-				# self.graphs.add_data('line', 12, [now], [off], limit=1)
-
 			if isinstance(obj, MesureVect):
 				if obj.idCapteur >= 17 and obj.idCapteur%3==2:
-					# self.graphs.add_data('3D', obj.idCapteur, [obj.X, 0], [obj.Y, 0], [obj.Z, 0], limit=2)
 					off = 1
 
 					packet.append(('3D', obj.idCapteur, ([obj.X, 0], [obj.Y, 0], [obj.Z, 0]), 2))
-
-					# self.graphs.add_data('3D', 1, *[[-off]]*3, limit=1) # prevent auto-resize
-					# self.graphs.add_data('3D', 2, *[[off]]*3, limit=1)
 					packet.append(('3D', 1, [[-off]]*3, 1)) # prevent auto-resize
 					packet.append(('3D', 2, [[off]]*3, 1))
 		except multiprocessing.managers.RemoteError:
@@ -654,12 +680,8 @@ def add_data_sensors(self, liste:list):
 
 	packet.append((None, 'UPDATE', 'line'))
 	packet.append((None, 'UPDATE', '3D'))
- 
-	self.graph_queue.put(packet)
 
-	# self.graphs.update('line')
-	# self.graphs.update('3D')
-	# self.graphs.plot()
+	self.graph_queue.put(packet)
 
 if __name__ == "__main__":
 		fen = MainWin(19) #1 admin, #10 test #19 test_teacher #20 test_eleve

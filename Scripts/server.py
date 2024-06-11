@@ -1,6 +1,7 @@
 from functools import partial
 import http.server
 import json
+import math
 import multiprocessing
 import os
 import queue
@@ -37,15 +38,26 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 		print('Received GET')
 
 	def do_POST(self):
+		"""
+		Handles the POST request received by the server.
+
+		Parses the request body, sends the data, and saves the measurements to the database.
+		"""
+		# Get the content length from the request headers
 		content_length = int(self.headers['Content-Length'])
+		# Read the request body
 		post_data = self.rfile.read(content_length)
+		# Decode the request body as JSON
 		post_body = json.loads(post_data.decode('utf-8'))
 
+		# Send the data to the appropriate handler
 		self.send_data(post_body)
 
-		start = time.time()
+		# Initialize packet ID
 		idPaquet = 1
+
 		try:
+			# Get the ID of the movement data
 			idDonneeMouvement = self.idMvt.value
 		except AttributeError:
 			idDonneeMouvement = 1
@@ -53,16 +65,22 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 			# Program has ended
 			return
 
+		# Initialize lists for simple and vector measurements
 		simples, vects = [], []
+
+		# Process each packet in the request body
 		for packet in post_body:
 			date = packet['time']
 
 			if packet['type'] == 'simple':
+				# Process simple measurements
 				for idCapteur, value in packet['data'].items():
-					idCapteur = int(idCapteur)+1
+					idCapteur = int(idCapteur) + 1
 
+					# Fix the sensor value if needed
 					value = self.fix_sensor_value(idCapteur, value)
 
+					# Add the measurement to the simples list
 					simples.append((idCapteur, idDonneeMouvement, date, value))
 					mesure = MesureSimple.from_raw((idCapteur, idDonneeMouvement, date, value))
 
@@ -73,11 +91,13 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 						break
 
 			elif packet['type'] == 'vector':
+				# Process vector measurements
 				for idCapteur, vec in packet['data'].items():
 					vec = self.fix_sensor_value(idCapteur, vec)
 
-					vects.append((int(idCapteur)+1, idDonneeMouvement, date, *vec))
-					mesure = MesureVect.from_raw((int(idCapteur)+1, idDonneeMouvement, date, *vec, idPaquet))
+					# Add the measurement to the vects list
+					vects.append((int(idCapteur) + 1, idDonneeMouvement, date, *vec))
+					mesure = MesureVect.from_raw((int(idCapteur) + 1, idDonneeMouvement, date, *vec, idPaquet))
 
 					try:
 						self.que.put(mesure)
@@ -92,28 +112,37 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 			pass
 		else:
 			if is_event_set and idDonneeMouvement != -1:
-				# print(f'Saving 1 packet, size: {len(post_body)}')
-
+				# Save the measurements to the database
 				try:
 					self.db.add_mesures_multiples(simples, vects)
 				except Exception as e:
 					print('Erreur durant l\'ajout des mesures:', e)
 
-				# print(f'-> Done, took {time.time()-start}sec')
-
+		# Send the response
 		self.send_response(200)
 		self.end_headers()
 		self.wfile.write(b'Ok')
 		# self.wfile.write(b'Hello, World!')
 
 	def fix_sensor_value(self, idCapteur, value):
+		"""
+		Fixes the sensor value based on the given idCapteur and value.
+
+		Parameters:
+		- idCapteur (int or str): The identifier of the sensor.
+		- value (float or list): The sensor value to be fixed.
+
+		Returns:
+		- float or list: The fixed sensor value.
+		"""
+		# Convert idCapteur to int if it's a string
 		if isinstance(idCapteur, str):
 			idCapteur = int(idCapteur)
 
 		if idCapteur <= 10:
-			# mesure simple
+			# Simple measurement
 			if 1 <= idCapteur <= 5:
-				# pression
+				# Pressure sensor
 				if not hasattr(self.que, 'pressure_average'):
 					pass
 					self.que.pressure_average = pressure_average = [[] for _ in range(5)]
@@ -122,37 +151,49 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 
 				pressure_average[idCapteur-1].append(value)
 				samples = 10
-				if len(pressure_average[idCapteur-1]) > samples: # 10 samples
+				if len(pressure_average[idCapteur-1]) > samples:  # Keep only the last 10 samples
 					pressure_average[idCapteur-1] = pressure_average[idCapteur-1][-samples:]
 
 				value = sum(pressure_average[idCapteur-1]) / len(pressure_average[idCapteur-1])
 			elif 6 <= idCapteur <= 10:
-				# flexion
-
+				# Flexion sensor
 				if len(self.calibration_data) > 0:
-
 					frange = self.calibration_data[str(idCapteur)]
+					value = (value - frange[1]) / (frange[0] - frange[1])
 
-					value = (value-frange[1]) / (frange[0]-frange[1])
-	
+			# Clamp the value between 0 and 1
 			value = min(max(value, 0), 1)
 		else:
-			# vecteur
+			# Vector sensor
+
+			# Normalize the vector
 			norm = sum([v**2 for v in value]) ** 0.5
 			if norm != 0 and norm != 1:
-				value = [v/norm for v in value]
+				value = [v / norm for v in value]
 
-			# if len(self.calibration_data) > 0:
+			# Calibration
+			x, y, z = value
+			r = 1
 
-			# 	ref = (0, 0) # TODO
-			# 	ref_angles = self.calibration_data[str(idCapteur)]
-			# 	teta = math.atan(value[1] / value[0])
-			# 	phi = math.acos(value[2] / (value[0]**2 + value[1]**2 + value[2]**2)**0.5) 
-			# 	value = 
+			ref_teta, ref_phi = self.calibration_data.get(str(idCapteur), None)
+			teta = math.acos(z/r)
+			phi = math.atan2(y/x)
+
+			teta2, phi2 = teta - ref_teta, phi - ref_phi
+			x = r * math.sin(teta2) * math.cos(phi2)
+			y = r * math.sin(teta2) * math.sin(phi2)
+			z = r * math.cos(teta2)
+			value = x, y, z
+
+			# Renormalize the vector
+			norm = sum([v**2 for v in value]) ** 0.5
+			if norm != 0 and norm != 1:
+				value = [v / norm for v in value]
 
 		return value
 
 	def send_data(self, packets):
+		# Add data to be sent to the GUI
 		try:
 			if not self.gui_data_queue.empty():
 				threading.Thread(target=self.gui_worker, daemon=True).start()
@@ -163,6 +204,9 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 		self.gui_data_queue.put(packets)
 
 	def gui_worker(self):
+		# Send all available data to the GUI
+		# This worker is used to avoid blocking the main thread
+
 		while True:
 			try:
 				packets = self.gui_data_queue.get(timeout=5)
