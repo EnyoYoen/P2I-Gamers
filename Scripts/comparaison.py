@@ -122,21 +122,34 @@ def formatageV(dico,mesures_vect):
         dico["Centrale inertielle"].append(MesureVect.from_raw((0,0,delta.total_seconds(), mvt.X, mvt.Y, mvt.Z)))
     return dico
 
-def comparaison_direct2(mesures_simple, mesures_vect, idMvt):
-    """
-    Compare the measurements obtained from different sources with the reference measurements.
+def formatageS_exp(dico, mesures_simple):
+    debut  = mesures_simple[0].dateCreation
+    for mvt in mesures_simple:
+        dt = mvt.dateCreation
+        delta = (dt-debut)
+        d = datetime.now().timestamp() - 4
+        if mvt.idCapteur > 5:
+            if dt.timestamp() >= d:
+                dico["Flexion"].append(MesureSimple.from_raw((0,0,delta.total_seconds(), mvt.valeur)))
+        if mvt.idCapteur <= 5:
+            if dt.timestamp() >= d:
+                dico["FlexiForce"].append(MesureSimple.from_raw((0,0,delta.total_seconds(), mvt.valeur)))
+    return dico
 
-    Args:
-        mesures_simple (list): List of simple measurements.
-        mesures_vect (list): List of vector measurements.
-        idMvt (int): ID of the movement.
+def formatageV_exp(dico,mesures_vect):
+    debut  = mesures_vect[0].dateCreation
+    fin = mesures_vect[-1].dateCreation
+    for mvt in mesures_vect:
+        dt = mvt.dateCreation
+        delta = (dt - debut)
+        d = datetime.now().timestamp() - 4
+        if dt.timestamp() >= d:
+            dico["Centrale inertielle"].append(MesureVect.from_raw((0,0,delta.total_seconds(), mvt.X, mvt.Y, mvt.Z)))
+    return dico
 
-    Returns:
-        tuple: A tuple containing the error rate and a dictionary of error values for each type of measurement.
-    """
-    
+def comparaison_direct2(mesures_simple,mesures_vect, idMvt):  
     data = ['FlexiForce', 'Flexion', 'Centrale inertielle']
-    mvmt_info, mesures_simple_th, mesures_vect_th = db().get_mouvement(idMvt)
+    mvt_info, mesures_simple_th, mesures_vect_th = db().get_mouvement(idMvt)
 
     dico_th = {}
     dico_th["FlexiForce"] = []
@@ -152,8 +165,8 @@ def comparaison_direct2(mesures_simple, mesures_vect, idMvt):
     dico_exp["FlexiForce"] = []
     dico_exp["Flexion"] = []
     dico_exp["Centrale inertielle"] = []
-    dico_exp = formatageS(dico_exp, mesures_simple)
-    dico_exp = formatageV(dico_exp, mesures_vect)
+    dico_exp = formatageS_exp(dico_exp, mesures_simple)
+    dico_exp = formatageV_exp(dico_exp, mesures_vect)
     # print(dico_th["Flexion"])
     # print(dico_exp["Flexion"])
     
@@ -162,6 +175,7 @@ def comparaison_direct2(mesures_simple, mesures_vect, idMvt):
         err_i = 100
         res = []
         mvt_exp_inter = []
+        print(mvt_exp)
         ti = mvt_exp[0].dateCreation
         tf = mvt_exp[-1].dateCreation
         mvt_th = dico_th[type]
@@ -170,7 +184,6 @@ def comparaison_direct2(mesures_simple, mesures_vect, idMvt):
         
         while mvt_th[i].dateCreation < ti :
             i += 1
-
         while ti < mvt_th[i].dateCreation < tf:
             mvt_th_compare.append(mvt_th[i])
             i += 1
@@ -183,10 +196,9 @@ def comparaison_direct2(mesures_simple, mesures_vect, idMvt):
             box["phi"] = err_phi
             if mvt_exp != 0 :  
                 for i in range(len(mvt_exp)):
-                    eps = 1e-10
-                    x1 = float(mvt_th[i].X)+eps
-                    y1 = float(mvt_th[i].Y)+eps
-                    z1 = float(mvt_th[i].Z)+eps
+                    x1 = float(mvt_th[i].X)+0.0000000000000000000001
+                    y1 = float(mvt_th[i].Y)+0.0000000000000000000001
+                    z1 = float(mvt_th[i].Z)+0.0000000000000000000001
                     x2 = float(mvt_exp[i].X)
                     y2 = float(mvt_exp[i].Y)
                     z2 = float(mvt_exp[i].Z)
@@ -216,7 +228,7 @@ def comparaison_direct2(mesures_simple, mesures_vect, idMvt):
             resultat = 100-err_i
             resultat = round(resultat, 2)
             taux.append(float(resultat))
-
+        
         elif type == 'FlexiForce':
             # mvt_exp_inter = interpolation_simple(mvt_exp, mvt_th_compare)
             # mvt_exp = mvt_exp_inter
@@ -225,11 +237,11 @@ def comparaison_direct2(mesures_simple, mesures_vect, idMvt):
             j = 0
             if mvt_exp != 0 :   
                 for i in range(len(mvt_exp)):
-                    v1 = mvt_th[i].valeur
+                    v1 = mvt_th[i].valeur    
                     v2 = mvt_exp[i].valeur
                     err = 100*abs(v1-v2)
                     err_pression.append(err)
-                    res.append(err)
+                    res.append(err)  
                     j =+1 
                 err_f = np.mean(res) 
                 if err_f < err_i:
@@ -262,19 +274,9 @@ def comparaison_direct2(mesures_simple, mesures_vect, idMvt):
         erreur = np.mean(taux)
     return erreur, box
 
-def comparaison_direct(dico_th, dico_exp):
-    """
-    Compare the data in dico_th with the data in dico_exp and calculate the error rate.
-
-    Args:
-        dico_th (dict): A dictionary containing the reference data.
-        dico_exp (dict): A dictionary containing the experimental data.
-
-    Returns:
-        tuple: A tuple containing the error rate (float) and a dictionary (box) with error values for each data type.
-
-    """
+def comparaison_direct(dico_th, dico_exp):  
     data = ['FlexiForce', 'Flexion', 'Centrale inertielle']
+    # dico_th = dico_total[nom]
     taux = []
     box = {}
     for type in data:
@@ -375,21 +377,6 @@ def comparaison_direct(dico_th, dico_exp):
     return erreur, box
 
 def comparaison_total(dico_th, dico_exp):
-    """
-    Compare the data in the dictionaries `dico_th` and `dico_exp` and calculate the success rate for different types of movements.
-
-    Args:
-        dico_th (dict): Dictionary containing the reference data for different types of movements.
-        dico_exp (dict): Dictionary containing the experimental data for different types of movements.
-
-    Returns:
-        tuple: A tuple containing the response string and a dictionary with error values for different movement types.
-
-    Raises:
-        None
-
-    """
-
     data = ['FlexiForce', 'Flexion', 'Centrale inertielle']
     reponse = f'Le geste a été effectué avec :'
     box ={}
