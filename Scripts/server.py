@@ -62,6 +62,8 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 			# Program has ended
 			return
 
+		print(f'Got data: {len(post_body)} packets        ' + '\r', end = "")
+
 		# Initialize lists for simple and vector measurements
 		simples, vects = [], []
 

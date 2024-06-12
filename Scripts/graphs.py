@@ -18,7 +18,7 @@ class Graphs:
 		self.graphs = {}
 		self.update_queue = list()
 		for i, (name, graph) in enumerate(graphs_class.items()):
-			self.graphs[name] = graph(self.fig, 211 + i, **plot_args.get(name, {}))
+			self.graphs[name] = graph(self.fig, 221 + i, **plot_args.get(name, {}))
 
 			self.update_queue.append(name)
 

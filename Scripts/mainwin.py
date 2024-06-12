@@ -239,12 +239,14 @@ class MainWin():
 		graphs_class = {
 			'line': LineGraph,
 			'3D': Graph3D,
-			# 'boxplot': BoxPlot,
-			# 'line2': LineGraph,
+			'boxplot': BoxPlot,
+			'line2': LineGraph,
 		}
+
 		kwargs = {
 			'3D': {'xlim': (-1, 1), 'ylim': (-1, 1), 'zlim': (-1, 1)}
 		}
+
 		self.graph_frame = Frame(self.root, bg='red')
 		self.graphs = Graphs(self.graph_frame, graphs_class, kwargs)
 		self.graph_frame.grid(row=1, column=7, rowspan=10, columnspan=1, sticky='nesw')
@@ -348,7 +350,7 @@ class MainWin():
 		self.bouton_start.grid(row=11, column=4)
 		
 
-		#self.compare_message()
+		self.compare_message()
 
 		self.sauvegarde()
 
@@ -377,10 +379,12 @@ class MainWin():
 		'''
 		mvt_the = {}
 		name_predict = self.factor_to_label[perceptron.predict(self.mlp, perceptron.convert_to_sequence(perceptron.get_mesure_list(self.idMvt.value, self.db)))]
-		for li in self.db.list_mouvements_info(1) :
-			id = li.idMvt
-			name = li.name
-			mvt_the[name] = self.db.get_mesure_vect(id) 
+
+		# for li in self.db.list_mouvements_info(1) :
+		# 	id = li.idMvt
+		# 	name = li.name
+		# 	mvt_the[name] = self.db.get_mesure_vect(id) 
+
 		text = cp.comparaison_total(name_predict, mvt_the, mvt_exp) 
 		self.resultat = tk.messagebox.showinfo(title='Info', message=text)
 
@@ -618,26 +622,28 @@ def get_current_comp(self, thread=False):
 							db = Database()
 							mesures_simple_exp, mesures_vect_exp = db.get_mesure_simple(self.idMvt.value), db.get_mesure_vect(self.idMvt.value)
 
-						try:
-							# value = cp.comparaison_direct(data_th, data_exp)
-							value, boxplot_data = cp.comparaison_direct2(mesures_simple_exp, mesures_vect_exp, idMvtTh)
+						if len(mesures_simple_exp) == 0 or len(mesures_vect_exp) == 0:
+							continue
 
+						try:
+							value, boxplot_data = cp.comparaison_direct2(mesures_simple_exp, mesures_vect_exp, idMvtTh)
+						except Exception as e:
+							print(f'Erreur pendant la comparaison: {e}')
+							pass
+						else:
 							value = round(value, 2)
 
 							# print(f'{value=}')
 							self.precision_var.set(value)
-						except Exception as e:
-							print(f'Erreur pendant la comparaison: {e}')
-							pass
 
-						packet = []
-						packet.append(('line2', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
-						packet.append(('line2', 2, ([datetime.datetime.now().timestamp()], [100]), 1))
-						packet.append(('line2', 3, ([datetime.datetime.now().timestamp()], [0]), 1))
-						packet.append(('boxplot', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
+							# packet = []
+							# packet.append(('line2', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
+							# packet.append(('line2', 2, ([datetime.datetime.now().timestamp()], [100]), 1))
+							# packet.append(('line2', 3, ([datetime.datetime.now().timestamp()], [0]), 1))
+							# packet.append(('boxplot', 1, ([datetime.datetime.now().timestamp()], [value]), None, 20))
 
-						self.graph_queue.put(packet)
-	
+							# self.graph_queue.put(packet)
+		
 					# self.graphs.add_data('line2', 1, [datetime.datetime.now().timestamp()], [value], value_limit=20)
 					# self.graphs.add_data('line2', 2, [datetime.datetime.now().timestamp()], [100], limit=1) # Prevent resize
 					# self.graphs.add_data('line2', 3, [datetime.datetime.now().timestamp()], [0], limit=1)
