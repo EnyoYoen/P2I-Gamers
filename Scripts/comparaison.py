@@ -10,7 +10,7 @@ from random import randint
 import matplotlib.pyplot as plt
 from math import sqrt, acos, asin, atan
 from database import Database as db
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 def interpolation_vect(mvt_exp, mvt_th):
@@ -201,6 +201,9 @@ def comparaison_direct2(mesures_simple,mesures_vect, idMvt):
         mvt_th_compare = []  
         i = 0
         
+        if isinstance(mvt_th[i].dateCreation, timedelta):
+            mvt_th[i].dateCreation = mvt_th[i].dateCreation.total_seconds()
+        
         while mvt_th[i].dateCreation < ti :
             i += 1
         while ti < mvt_th[i].dateCreation < tf:
@@ -215,9 +218,10 @@ def comparaison_direct2(mesures_simple,mesures_vect, idMvt):
             box["phi"] = err_phi
             if mvt_exp != 0 :  
                 for i in range(len(mvt_exp)):
-                    x1 = float(mvt_th[i].X)+0.0000000000000000000001
-                    y1 = float(mvt_th[i].Y)+0.0000000000000000000001
-                    z1 = float(mvt_th[i].Z)+0.0000000000000000000001
+                    delta = 1e-10
+                    x1 = float(mvt_th[i].X)+delta
+                    y1 = float(mvt_th[i].Y)+delta
+                    z1 = float(mvt_th[i].Z)+delta
                     x2 = float(mvt_exp[i].X)
                     y2 = float(mvt_exp[i].Y)
                     z2 = float(mvt_exp[i].Z)
@@ -226,7 +230,7 @@ def comparaison_direct2(mesures_simple,mesures_vect, idMvt):
                     teta2 = acos(z2/r2)
                     phi2 = atan(y2/x2)
                     r1 = sqrt((x1**2)+(y1**2)+(z1**2))
-                    print(r1)
+                    # print(r1)
                     teta1 = acos(z1/r1)
                     phi1 = atan(y1/x1)
                     err_t = 100*abs(teta1-teta2)/teta1
@@ -289,7 +293,7 @@ def comparaison_direct2(mesures_simple,mesures_vect, idMvt):
             resultat = 100-err_i
             resultat = round(resultat, 2)
             taux.append(float(resultat))
-        print(taux)
+        # print(taux)
         erreur = np.mean(taux)
     return erreur, box
 
