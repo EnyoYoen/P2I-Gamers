@@ -289,9 +289,13 @@ def start_tkinter(video_que):
 	root.mainloop()
 
 def display_stream(tk_label, video_que):
-	tk_label.after(10, display_stream, tk_label, video_que)
+	tk_label.after(100, display_stream, tk_label, video_que)
+	if video_que.empty():
+		return
+
 	try:
-		frame = video_que.get_nowait()
+		while not video_que.empty():
+			frame = video_que.get_nowait()
 
 		cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
 		img = Image.fromarray(cv2image)

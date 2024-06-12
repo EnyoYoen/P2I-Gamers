@@ -545,7 +545,7 @@ def comparaison_total(id_th, mesures_simple, mesures_vect):
             resultat = round(resultat, 2)
             text = f' {resultat}% de réussite en flexion,'
             reponse += text
-        print(reponse)
+        # print(reponse)
     return reponse
 
 

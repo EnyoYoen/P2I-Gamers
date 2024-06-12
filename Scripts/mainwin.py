@@ -181,11 +181,12 @@ class MainWin():
 		
 		#cadre visualisation
 		# self.canevas = tk.Canvas(self.root, background='lightblue')
-		self.canevas = tk.Frame(self.root, background='lightblue')
-		self.video_stream_label = tk.Label(self.canevas)
-		self.video_stream_label.grid(row=0, column=0, sticky='nesw')
+		# self.canevas = tk.Frame(self.root, background='lightblue')
+		self.video_stream_label = tk.Label(self.root)#self.canevas)
+		# self.video_stream_label.grid(row=0, column=0, sticky='nesw')
+		self.video_stream_label.grid(column=2,columnspan=5,row=1,rowspan= 10, sticky='nesw')
 
-		self.canevas.grid(column=2,columnspan=5,row=1,rowspan= 10, sticky='nesw')
+		# self.canevas.grid(column=2,columnspan=5,row=1,rowspan= 10, sticky='nesw')
 		
 		#ajustement de la taille relative
 		#self.canevas.columnconfigure(1, weight=2)
@@ -239,8 +240,8 @@ class MainWin():
 		graphs_class = {
 			'line': LineGraph,
 			'3D': Graph3D,
-			'boxplot': BoxPlot,
-			'line2': LineGraph,
+			# 'boxplot': BoxPlot,
+			# 'line2': LineGraph,
 		}
 
 		kwargs = {
@@ -585,12 +586,13 @@ def get_current_comp(self, thread=False):
 				try:
 					USE_PERCEPTRON = True
 					if USE_PERCEPTRON:
+						idMvtExp = self.idMvt.value
 						try:
 							label = self.factor_to_label[perceptron.predict(
 								self.mlp, 
 								pd.DataFrame(np.array([perceptron.convert_to_sequence(
 									perceptron.get_mesure_list(
-										326, 
+										idMvtExp, 
 										db
 							)).flatten()])))[0]]
 						except Exception as e:
