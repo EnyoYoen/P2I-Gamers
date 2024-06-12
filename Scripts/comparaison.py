@@ -51,8 +51,8 @@ def interpolation_vect(mvt_exp, mvt_th):
 def interpolation_simple(mvt_exp, mvt_th):
     inter = []
     j = 0
-    print(len(mvt_th))
-    print(len(mvt_exp))
+    # print(len(mvt_th))
+    # print(len(mvt_exp))
     for i in range(0,len(mvt_exp)):
         t1_th = mvt_th[j].dateCreation
         t1 = mvt_exp[i].dateCreation
@@ -61,7 +61,7 @@ def interpolation_simple(mvt_exp, mvt_th):
         # print(t1_th)
         if t1_th == t1:
             inter.append(MesureSimple.from_raw((0,0,t1,v1)))
-            print(f"valeur gardée : {(t1,v1)}")
+            # print(f"valeur gardée : {(t1,v1)}")
             j += 1
         else:
             while t1_th < t1:
@@ -75,12 +75,12 @@ def interpolation_simple(mvt_exp, mvt_th):
                 inter.append(MesureSimple.from_raw((0,0,t,v)))
                 j += 1
                 t1_th = mvt_th[j].dateCreation
-                print(f"valeur ajoutée : {(t,v)}")
+                # print(f"valeur ajoutée : {(t,v)}")
                 if j == (len(mvt_th)-2):
                     break
                 
             inter.append(MesureSimple.from_raw((0,0,t1_th,v1)))
-            print(f"valeur gardée : {(t1_th,v1)}")
+            # print(f"valeur gardée : {(t1_th,v1)}")
             j += 1  
     inter.sort(key=lambda e: e.dateCreation)
     return inter
@@ -111,7 +111,7 @@ def formatageS(dico, mesures_simple):
         if mvt.idCapteur > 5:
             dico["Flexion"].append(MesureSimple.from_raw((0,0,delta.total_seconds(), mvt.valeur)))
         if mvt.idCapteur <= 5:
-            dico["FlexiForce"].append(MesureSimple.from_raw((0,0,delta, mvt.valeur)))
+            dico["FlexiForce"].append(MesureSimple.from_raw((0,0,delta.total_seconds(), mvt.valeur)))
     return dico
 
 def formatageV(dico,mesures_vect):
@@ -147,6 +147,25 @@ def formatageV_exp(dico,mesures_vect):
             dico["Centrale inertielle"].append(MesureVect.from_raw((0,0,delta.total_seconds(), mvt.X, mvt.Y, mvt.Z)))
     return dico
 
+def formatageS_exptot(dico, mesures_simple):
+    debut  = mesures_simple[0].dateCreation
+    for mvt in mesures_simple:
+        dt = mvt.dateCreation
+        delta = (dt-debut)
+        if mvt.idCapteur > 5:
+            dico["Flexion"].append(MesureSimple.from_raw((0,0,delta.total_seconds(), mvt.valeur)))
+        if mvt.idCapteur <= 5:
+            dico["FlexiForce"].append(MesureSimple.from_raw((0,0,delta.total_seconds(), mvt.valeur)))
+    return dico
+
+def formatageV_exptot(dico,mesures_vect):
+    debut  = mesures_vect[0].dateCreation
+    for mvt in mesures_vect:
+        dt = mvt.dateCreation
+        delta = (dt - debut)
+        dico["Centrale inertielle"].append(MesureVect.from_raw((0,0,delta.total_seconds(), mvt.X, mvt.Y, mvt.Z)))
+    return dico
+
 def comparaison_direct2(mesures_simple,mesures_vect, idMvt):  
     data = ['FlexiForce', 'Flexion', 'Centrale inertielle']
     mvt_info, mesures_simple_th, mesures_vect_th = db().get_mouvement(idMvt)
@@ -167,16 +186,16 @@ def comparaison_direct2(mesures_simple,mesures_vect, idMvt):
     dico_exp["Centrale inertielle"] = []
     dico_exp = formatageS_exp(dico_exp, mesures_simple)
     dico_exp = formatageV_exp(dico_exp, mesures_vect)
-    # print(dico_th["Flexion"])
-    # print(dico_exp["Flexion"])
+    print(dico_th["Flexion"])
+    print(dico_exp["Flexion"])
     
     for type in data:
         mvt_exp = dico_exp[type]
         err_i = 100
         res = []
         mvt_exp_inter = []
-        print(mvt_exp)
         ti = mvt_exp[0].dateCreation
+        print(mvt_exp)
         tf = mvt_exp[-1].dateCreation
         mvt_th = dico_th[type]
         mvt_th_compare = []  
@@ -279,6 +298,7 @@ def comparaison_direct(dico_th, dico_exp):
     # dico_th = dico_total[nom]
     taux = []
     box = {}
+    
     for type in data:
         mvt_exp = dico_exp[type]
         err_i = 100
@@ -376,38 +396,68 @@ def comparaison_direct(dico_th, dico_exp):
         erreur = np.mean(taux)
     return erreur, box
 
-def comparaison_total(dico_th, dico_exp):
+def comparaison_total(id_th, mesures_simple, mesures_vect):
     data = ['FlexiForce', 'Flexion', 'Centrale inertielle']
     reponse = f'Le geste a été effectué avec :'
     box ={}
+    mvt_info, mesures_simple_th, mesures_vect_th = db().get_mouvement(id_th)
+
+    dico_th = {}
+    dico_th["FlexiForce"] = []
+    dico_th["Flexion"] = []
+    dico_th["Centrale inertielle"] = []
+    dico_th = formatageS(dico_th, mesures_simple_th)
+    dico_th = formatageV(dico_th, mesures_vect_th)
+
+    dico_exp = {}
+    dico_exp["FlexiForce"] = []
+    dico_exp["Flexion"] = []
+    dico_exp["Centrale inertielle"] = []
+    dico_exp = formatageS_exptot(dico_exp, mesures_simple)
+    dico_exp = formatageV_exptot(dico_exp, mesures_vect)
+
+    # print(dico_th)
+    # print(dico_exp)
+
     for type in data:
         mvt_exp = dico_exp[type]
         err_i = 100
         res = []
-        mvt_exp_inter = []
+        # mvt_exp_inter = []
         mvt_th = dico_th[type]
         duree_th = mvt_th[-1].dateCreation - mvt_th[0].dateCreation
         duree_exp = mvt_exp[-1].dateCreation - mvt_exp[0].dateCreation
         r = duree_exp/duree_th
         for row in mvt_exp:
             t = round(row.dateCreation/r)
-            row.dateCreation = t               
+            row.dateCreation = t       
+
+        # print(len(mvt_exp))
+        # print(len(mvt_th))
+
+        len_mvt = len(mvt_th)
+        if len(mvt_exp) < len(mvt_th):
+            len_mvt = len(mvt_exp)   
+
+        # print(len_mvt)     
         
         if type == 'Centrale inertielle':
-            mvt_exp_inter = interpolation_vect(mvt_exp, mvt_th)
-            mvt_exp = mvt_exp_inter
+            # mvt_exp_inter = interpolation_vect(mvt_exp, mvt_th)
+            # mvt_exp = mvt_exp_inter
             err_teta = []
             box["teta"] = err_teta
             err_phi = []
             box["phi"] = err_phi
-            if mvt_exp != 0 :  
-                for i in range(len(mvt_exp)):
-                    x1 = mvt_th[i].X
-                    y1 = mvt_th[i].Y
-                    z1 = mvt_th[i].Z    
-                    x2 = mvt_exp[i].X
-                    y2 = mvt_exp[i].Y
-                    z2 = mvt_exp[i].Z
+            if mvt_exp != [] :  
+                for i in range(len_mvt):
+                    epi = 10**(-11)
+                    x1 = float(mvt_th[i].X) + epi
+                    y1 = float(mvt_th[i].Y) + epi
+                    z1 = float(mvt_th[i].Z) + epi
+                    x2 = float(mvt_exp[i].X) + epi
+                    y2 = float(mvt_exp[i].Y) + epi
+                    z2 = float(mvt_exp[i].Z) + epi
+
 
                     r2 = sqrt((x2**2)+(y2**2)+(z2**2))
                     teta2 = acos(z2/r2)
@@ -424,27 +474,30 @@ def comparaison_total(dico_th, dico_exp):
                     err_y = 100*abs(y1-y2)/y1
                     err_z = 100*abs(z1-z2)/z1
                     moy = (err_x + err_y + err_z)/3
-                    res.append(moy)  
-                err_f = np.mean(res)
-                
-                if err_f < err_i:
-                    err_i = err_f
+                    # res.append(moy) 
+                err_f1 = np.mean(err_teta)
+                err_f2 = np.mean(err_phi)
+                if err_f1 < err_i and err_f2 < err_i:
+                    err_i1 = err_f1
+                    err_i2 = err_f2
                 else:
-                    text = "trop d'erreurs."
+                    text = "trop d'erreurs en positions."
                     reponse += text
                     return reponse
-            resultat = 100-err_i
-            resultat = round(resultat, 2)
-            text = f' {resultat}% de réussite en position'  
+            resultat1 = 100-err_i1
+            resultat2 = 100-err_i2
+            resultat1 = round(resultat1, 2)
+            resultat2 = round(resultat2, 2)
+            text = f' {resultat1}% en teta et {resultat2}% de réussite en phi'  
             reponse += text
         
         elif type == 'FlexiForce':
-            mvt_exp_inter = interpolation_simple(mvt_exp, mvt_th)
-            mvt_exp = mvt_exp_inter
+            # mvt_exp_inter = interpolation_simple(mvt_exp, mvt_th)
+            # mvt_exp = mvt_exp_inter
             err_pression = []
             box["pression"] = err_pression
-            if mvt_exp_inter != 0 :   
-                for i in range(len(mvt_exp)):
+            if mvt_exp != [] :   
+                for i in range(len_mvt):
                     v1 = mvt_th[i].valeur    
                     v2 = mvt_exp[i].valeur
                     err = 100*abs(v1-v2)
@@ -464,12 +517,12 @@ def comparaison_total(dico_th, dico_exp):
             text = f' {resultat}% de réussite en pression,'
             reponse += text 
         else:
-            mvt_exp_inter = interpolation_simple(mvt_exp, mvt_th)
-            mvt_exp = mvt_exp_inter
+            # mvt_exp_inter = interpolation_simple(mvt_exp, mvt_th)
+            # mvt_exp = mvt_exp_inter
             err_flexion = []
             box["flexion"] = err_flexion
-            if mvt_exp_inter != 0 :   
-                for i in range(len(mvt_exp)):
+            if mvt_exp != [] :   
+                for i in range(len_mvt):
                     v1 = mvt_th[i].valeur    
                     v2 = mvt_exp[i].valeur
                     err = 100*abs(v1-v2)
@@ -488,7 +541,8 @@ def comparaison_total(dico_th, dico_exp):
             resultat = round(resultat, 2)
             text = f' {resultat}% de réussite en flexion,'
             reponse += text
-    return reponse +'.',box
+        print(reponse)
+    return reponse
 
 
 if __name__ == "__main__":
@@ -523,14 +577,18 @@ if __name__ == "__main__":
     # test :
     # erreur , box1 = comparaison_direct(data_th, mvt_exp)   
     # print(erreur)
-    # texte, box = comparaison_total(data_th, mvt_exp2)   
-    # print(texte)
+    
+    mvmt_info, mesures_simple, mesures_vect = db().get_mouvement(322)
+    texte = comparaison_total(323, mesures_simple, mesures_vect)   
+    print(texte)
+    
     # my_dict = box1
     # plt.boxplot(my_dict.values(), labels=my_dict.keys())
     # plt.show()
     
     
-    mvmt_info, mesures_simple, mesures_vect = db().get_mouvement(390)
 
-    err, box = comparaison_direct2(mesures_simple,mesures_vect, 329)
-    print(err)
+    # mvmt_info, mesures_simple, mesures_vect = db().get_mouvement(390)
+
+    # err, box = comparaison_direct2(mesures_simple,mesures_vect, 329)
+    # print(err)
