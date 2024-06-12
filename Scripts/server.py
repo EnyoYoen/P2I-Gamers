@@ -50,9 +50,6 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 		# Decode the request body as JSON
 		post_body = json.loads(post_data.decode('utf-8'))
 
-		# Send the data to the appropriate handler
-		self.send_data(post_body)
-
 		# Initialize packet ID
 		idPaquet = 1
 
@@ -93,17 +90,21 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 			elif packet['type'] == 'vector':
 				# Process vector measurements
 				for idCapteur, vec in packet['data'].items():
+					idCapteur = int(idCapteur) + 1
 					vec = self.fix_sensor_value(idCapteur, vec)
 
 					# Add the measurement to the vects list
-					vects.append((int(idCapteur) + 1, idDonneeMouvement, date, *vec))
-					mesure = MesureVect.from_raw((int(idCapteur) + 1, idDonneeMouvement, date, *vec, idPaquet))
+					vects.append((idCapteur, idDonneeMouvement, date, *vec))
+					mesure = MesureVect.from_raw((idCapteur, idDonneeMouvement, date, *vec, idPaquet))
 
 					try:
 						self.que.put(mesure)
 					except Exception:
 						# Program has ended
 						break
+
+		# Send the data to the 3D renderer
+		self.send_data(simples, vects)
 
 		try:
 			is_event_set = self.event.is_set()
@@ -175,24 +176,25 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 			x, y, z = value
 			r = 1
 
-			ref_teta, ref_phi = self.calibration_data.get(str(idCapteur), None)
-			teta = math.acos(z/r)
-			phi = math.atan2(y/x)
+			ref_teta, ref_phi = self.calibration_data.get(str(idCapteur), (None, None))
+			if ref_teta is not None:
+				teta = math.acos(z/r)
+				phi = math.atan2(y, x)
 
-			teta2, phi2 = teta - ref_teta, phi - ref_phi
-			x = r * math.sin(teta2) * math.cos(phi2)
-			y = r * math.sin(teta2) * math.sin(phi2)
-			z = r * math.cos(teta2)
-			value = x, y, z
+				teta2, phi2 = ref_teta - teta, ref_phi - phi
+				x = r * math.sin(teta2) * math.cos(phi2)
+				y = r * math.sin(teta2) * math.sin(phi2)
+				z = r * math.cos(teta2)
+				value = x, y, z
 
-			# Renormalize the vector
-			norm = sum([v**2 for v in value]) ** 0.5
-			if norm != 0 and norm != 1:
-				value = [v / norm for v in value]
+				# # Renormalize the vector -> not needed
+				# norm = sum([v**2 for v in value]) ** 0.5
+				# if norm != 0 and norm != 1:
+				# 	value = [v / norm for v in value]
 
 		return value
 
-	def send_data(self, packets):
+	def send_data(self, simple, vect):
 		# Add data to be sent to the GUI
 		try:
 			if not self.gui_data_queue.empty():
@@ -201,7 +203,7 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 			# Program has ended
 			return
 
-		self.gui_data_queue.put(packets)
+		self.gui_data_queue.put((simple, vect))
 
 	def gui_worker(self):
 		# Send all available data to the GUI
@@ -209,7 +211,7 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 
 		while True:
 			try:
-				packets = self.gui_data_queue.get(timeout=5)
+				simple, vect = self.gui_data_queue.get(timeout=5)
 			except queue.Empty:
 				# Stop the worker
 				return
@@ -221,17 +223,12 @@ class CustomRequestHandler(http.server.BaseHTTPRequestHandler):
 				return
 
 			out = {}
-			# for packet in packets:
-			for packet in packets[:2]:
-				if packet['type'] == 'simple':
-					for idCapteur, value in packet['data'].items():
-						if int(idCapteur) <= 4: # Only fingers
-							out[idCapteur] = [value, 0, 0]
-				elif packet['type'] == 'vector':
-					for idCapteur, vec in packet['data'].items():
-						if int(idCapteur) >= 17 and int(idCapteur)%3==1:
-							out[int(idCapteur)//3 - 1] = vec
-
+			for (idCapteur, idDonneeMouvement, date, value) in simple:
+				if 6 <= int(idCapteur) <= 10: # Only fingers
+					out[idCapteur-6] = [value, 0, 0]
+			for (idCapteur, idDonneeMouvement, date, x, y, z) in vect:
+				if int(idCapteur) >= 17 and int(idCapteur)%3==2:
+					out[int(idCapteur)//3 - 1] = [x, y, z]
 
 			serialized = ';'.join([','.join([str(k), *list(map(str, v))]) for k, v in out.items()])
 
@@ -270,9 +267,11 @@ class DataServer:
 
 		if os.path.exists(CALIBRATION_FILE):
 			with open(CALIBRATION_FILE, 'r') as f:
-				self.calibration_data = json.load(f)
-		else:
-			self.calibration_data = {}
+				calibration_data = json.load(f)
+				for k, v in calibration_data.items():
+					self.calibration_data[k] = v
+		# else:
+		# 	self.calibration_data = {}
 
 		# self.server_thread = threading.Thread(target=self.run_server, args=(self.server_event,self.dataQueue, self.gui_data_queue), daemon=True)
 		self.server_thread = multiprocessing.Process(target=run_custom_server, args=(self.server_event, self.dataQueue, self.gui_data_queue, self.idMvt, self.calibration_data), daemon=True)

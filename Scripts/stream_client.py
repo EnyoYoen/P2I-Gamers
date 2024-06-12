@@ -1,26 +1,15 @@
-#!/usr/bin/env python
-
-# import asyncio
-# import websockets
-# from websockets.server import serve
-# import websockets.server
-
-# async def echo(websocket):
-# 	async for message in websocket:
-# 		await websocket.send(message)
-
-# async def main():
-# 	async with serve(echo, "172.29.181.58", 80):
-# 		await asyncio.Future()  # run forever
-
-# asyncio.run(main())
-
-
-
-import argparse
 import asyncio
+import io
+import json
 import logging
 import math
+import os
+import queue
+import threading
+from tkinter import *
+from PIL import ImageTk, Image
+import uuid
+import numpy as np
 
 import cv2
 import numpy
@@ -29,50 +18,65 @@ from aiortc import (
 	RTCPeerConnection,
 	RTCSessionDescription,
 	VideoStreamTrack,
+	MediaStreamTrack,
 )
-from aiortc.contrib.media import MediaBlackhole, MediaPlayer, MediaRecorder
-from aiortc.contrib.signaling import BYE, add_signaling_arguments, create_signaling, object_to_string, object_from_string
-from av import VideoFrame
+from aiortc.contrib.signaling import BYE, candidate_from_sdp
+from aiortc.contrib.media import MediaRecorder, MediaRelay, MediaBlackhole, MediaStreamError
 from websockets.server import serve
+from websockets.exceptions import ConnectionClosedOK
+from av import VideoFrame
+
+def object_from_string(message_str):
+	message = json.loads(message_str)
+	if message["type"] in ["answer", "offer"]:
+		return RTCSessionDescription(sdp=message['data']['sdp'], type=message['type'])
+	elif message["type"] == "candidate" and message["data"]["candidate"]:
+		candidate = candidate_from_sdp(message["data"]["candidate"].split(":", 1)[1])
+		candidate.sdpMid = message["data"]["sdpMid"]
+		candidate.sdpMLineIndex = message["data"]["sdpMLineIndex"]
+		return candidate
+	elif message["type"] == "bye":
+		return None
 
 
-class WebsocketSignaling:
-	def __init__(self, host=None, port=None):
-		self._host = host or '127.0.0.1'
-		self._port = port or 80
-		self._websocket_server = None
-		self._websocket = None
+def object_to_string(obj, from_):
+	if isinstance(obj, RTCSessionDescription):
+		message = {
+			"from": from_,
+			"type": obj.type,
+			"data": {
+				"sdp": obj.sdp,
+			}
+		}
+	else:
+		assert obj is BYE
+		message = {"type": "bye"}
+	return json.dumps(message, sort_keys=True)
 
-	async def connect(self):
-		# self._websocket = await websockets.connect("ws://" + str(self._host) + ":" + str(self._port))
-		self._websocket_server = await serve(self.handle_connection, self._host, self._port)
 
-	async def close(self):
-		if self._websocket is not None and self._websocket.open is True:
-			await self.send(None)
-			await self._websocket.close()
-
-	async def receive(self):
-		try:
-			data = await self._websocket.recv()
-		except asyncio.IncompleteReadError: #TODO: replace to occur from websocket connection
-			print("IncompleteReadError")
-			return
+async def receive(ws):
+	try:
+		data = await ws.recv()
+	except asyncio.IncompleteReadError: #TODO: replace to occur from websocket connection
+		print("IncompleteReadError")
+		ret = None
+	except ConnectionClosedOK:
+		ret = None
+	else:
 		ret = object_from_string(data)
-		if ret == None:
-			print("remote host says good bye!")
 
-		return ret
+	if ret == None:
+		print("remote host says good bye!")
+		ret = BYE
 
-	async def send(self, descr):
-		data = object_to_string(descr)
-		await self._websocket.send(data + '\n')
+	return ret
 
-	async def handle_connection(self, ws):
-		if self._websocket is not None:
-			print("Already connected to a client, closing connection")
-
-		self._websocket = ws
+async def send(ws, descr, from_):
+	data = object_to_string(descr, from_)
+	
+	# data["from"] = pc._RTCPeerConnection__stream_id, #_RTCPeerConnection__cname
+	# data["to"]: ""
+	await ws.send(data + '\n')
 
 class FlagVideoStreamTrack(VideoStreamTrack):
 	"""
@@ -120,6 +124,7 @@ class FlagVideoStreamTrack(VideoStreamTrack):
 			)
 
 	async def recv(self):
+		return None
 		pts, time_base = await self.next_timestamp()
 
 		frame = self.frames[self.counter % 30]
@@ -134,33 +139,81 @@ class FlagVideoStreamTrack(VideoStreamTrack):
 		return data_bgr
 
 
-async def run(pc, player, recorder, signaling, role):
-	def add_tracks():
-		if player and player.audio:
-			pc.addTrack(player.audio)
+class VideoTransformTrack(MediaStreamTrack):
+	"""
+	A video stream track that transforms frames from an another track.
+	"""
 
-		if player and player.video:
-			pc.addTrack(player.video)
-		else:
-			pc.addTrack(FlagVideoStreamTrack())
+	kind = "video"
+
+	def __init__(self, track, que):
+		super().__init__()  # don't forget this!
+		self.track = track
+		self.video_que = que
+
+	async def recv(self):
+		try:
+			frame = await self.track.recv()
+			img = frame.to_ndarray(format="bgr24")
+
+			await self.video_que.put(img)
+
+			return frame
+		except MediaStreamError:
+			pass
+		except Exception as e:
+			pass
+
+logger = logging.getLogger("pc")
+# logging.basicConfig(level=logging.INFO)
+pcs = set()
+# relay = MediaRelay()
+
+async def callback(ws, video_queue):
+	pc = RTCPeerConnection()
+	pc_id = "PeerConnection(%s)" % uuid.uuid4()
+	pcs.add(pc)
+
+	def log_info(msg, *args):
+		logger.info(pc_id + " " + msg, *args)
+
+	log_info("Created for %s", ws.remote_address)
+
+	if not os.path.exists("vid"):
+		os.makedirs("vid")
+	# recorder = MediaRecorder('images/%3d.png')
+	recorder = MediaBlackhole()
+
+	# data_channel = pc.createDataChannel("data")
+	pc.addTrack(FlagVideoStreamTrack())
+	# send offer
+	# pc.addTrack(data_channel)
+	await pc.setLocalDescription(await pc.createOffer())
+	await send(ws, pc.localDescription, pc._RTCPeerConnection__stream_id)
+
+	@pc.on("connectionstatechange")
+	async def on_connectionstatechange():
+		log_info("Connection state is %s", pc.connectionState)
+		if pc.connectionState == "failed":
+			await pc.close()
+			pcs.discard(pc)
 
 	@pc.on("track")
 	def on_track(track):
-		print("Receiving %s" % track.kind)
-		recorder.addTrack(track)
+		log_info("Track %s received", track.kind)
 
-	# connect signaling
-	await signaling.connect()
+		if track.kind == "video":
+			# recorder.addTrack(relay.subscribe(track))
+			# recorder.addTrack(track)
+			recorder.addTrack(VideoTransformTrack(track, video_queue))
 
-	if role == "offer":
-		# send offer
-		add_tracks()
-		await pc.setLocalDescription(await pc.createOffer())
-		await signaling.send(pc.localDescription)
+		@track.on("ended")
+		async def on_ended():
+			log_info("Track %s ended", track.kind)
+			await recorder.stop()
 
-	# consume signaling
 	while True:
-		obj = await signaling.receive()
+		obj = await receive(ws)
 
 		if isinstance(obj, RTCSessionDescription):
 			await pc.setRemoteDescription(obj)
@@ -168,60 +221,93 @@ async def run(pc, player, recorder, signaling, role):
 
 			if obj.type == "offer":
 				# send answer
-				add_tracks()
+				pc.addTrack(FlagVideoStreamTrack())
+				# data_channel = pc.createDataChannel("data")
+
 				await pc.setLocalDescription(await pc.createAnswer())
-				await signaling.send(pc.localDescription)
+
+				answer = pc.localDescription
+				await send(ws, answer, pc._RTCPeerConnection__stream_id)
+
 		elif isinstance(obj, RTCIceCandidate):
 			await pc.addIceCandidate(obj)
+
 		elif obj is BYE:
 			print("Exiting")
+			await recorder.stop()
 			break
 
 
-if __name__ == "__main__":
-	parser = argparse.ArgumentParser(description="Video stream from the command line")
-	parser.add_argument("role", choices=["offer", "answer"])
-	parser.add_argument("--play-from", help="Read the media from a file and sent it.")
-	parser.add_argument("--record-to", help="Write received media to a file.")
-	parser.add_argument("--verbose", "-v", action="count")
-	add_signaling_arguments(parser)
-	args = parser.parse_args()
+async def on_shutdown():
+	# close peer connections
+	coros = [pc.close() for pc in pcs]
+	await asyncio.gather(*coros)
+	pcs.clear()
 
-	if args.verbose:
-		logging.basicConfig(level=logging.DEBUG)
 
-	# create signaling and peer connection
-	signaling = WebsocketSignaling()
-	pc = RTCPeerConnection()
+async def run(host=None, port=None, video_queue=None):
+	# connect signaling
+	host = host or '127.0.0.1'
+	port = port or 80
+	async with serve(lambda ws, v=video_queue: callback(ws, v), host, port):
+		await asyncio.Future()
 
-	# create media source
-	if args.play_from:
-		player = MediaPlayer(args.play_from)
-	else:
-		player = None
 
-	# create media sink
-	if args.record_to:
-		recorder = MediaRecorder(args.record_to)
-	else:
-		recorder = MediaBlackhole()
+def start_stream_client(video_que=None, thread=False):
+	if thread is False:
+		video_que = asyncio.Queue()
+		threading.Thread(target=start_stream_client, args=(video_que, True), daemon=True).start()
+		return video_que
 
 	# run event loop
-	loop = asyncio.get_event_loop()
+	loop = asyncio.new_event_loop()
+	asyncio.set_event_loop(loop)
 	try:
 		loop.run_until_complete(
-			run(
-				pc=pc,
-				player=player,
-				recorder=recorder,
-				signaling=signaling,
-				role=args.role,
-			)
+			run(video_queue=video_que)
 		)
 	except KeyboardInterrupt:
 		pass
+	except Exception as e:
+		print(e)
 	finally:
 		# cleanup
-		loop.run_until_complete(recorder.stop())
-		loop.run_until_complete(signaling.close())
-		loop.run_until_complete(pc.close())
+		loop.run_until_complete(on_shutdown())
+
+
+def start_tkinter(video_que):
+	
+	root = Tk()
+	# Create a frame
+	app = Frame(root, bg="white")
+	app.grid()
+	# Create a label in the frame
+	lmain = Label(app)
+	lmain.grid()
+ 
+	display_stream(lmain, video_que)
+	root.mainloop()
+
+def display_stream(tk_label, video_que):
+	tk_label.after(10, display_stream, tk_label, video_que)
+	try:
+		frame = video_que.get_nowait()
+
+		cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+		img = Image.fromarray(cv2image)
+		imgtk = ImageTk.PhotoImage(image=img)
+		tk_label.imgtk = imgtk
+		tk_label.configure(image=imgtk)
+	except queue.Empty:
+		pass
+	except asyncio.QueueEmpty:
+		pass
+	except Exception as e:
+		pass
+
+if __name__ == "__main__":
+	# video_que = io.BytesIO()
+	video_que = start_stream_client()
+	start_tkinter(video_que)
+	# Closes all the frames 
+	cv2.destroyAllWindows() 

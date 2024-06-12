@@ -14,6 +14,7 @@ import itertools
 from PIL import Image, ImageTk
 import ctypes
 
+from stream_client import display_stream, start_stream_client
 from secret import CALIBRATION_FILE
 
 from graphs import *
@@ -78,11 +79,14 @@ class MainWin():
 		self.creer_widgets()
 
 		self.data_server = DataServer()
-		for k in ('server_event', 'dataQueue', 'gui_data_queue', 'idMvt', 'calibration_data'):
+		for k in ('server_event', 'dataQueue', 'gui_data_queue', 'idMvt'):
 			setattr(self, k, getattr(self.data_server, k))
 
 		self.graph_queue, self.precision_var_proxy = get_current_comp(self)
 		self.update_plots()
+
+		self.video_que = start_stream_client()
+		display_stream(self.video_stream_label, self.video_que)
 
 		self.root.mainloop()
 
@@ -176,7 +180,11 @@ class MainWin():
 		self.button_historique.grid(column=1, row=0, sticky="nesw")
 		
 		#cadre visualisation
-		self.canevas = tk.Canvas(self.root, background='lightblue')
+		# self.canevas = tk.Canvas(self.root, background='lightblue')
+		self.canevas = tk.Frame(self.root, background='lightblue')
+		self.video_stream_label = tk.Label(self.canevas)
+		self.video_stream_label.grid(row=0, column=0, sticky='nesw')
+
 		self.canevas.grid(column=2,columnspan=5,row=1,rowspan= 10, sticky='nesw')
 		
 		#ajustement de la taille relative
@@ -420,8 +428,8 @@ class MainWin():
 		if os.path.exists(CALIBRATION_FILE):
 			os.remove(CALIBRATION_FILE)
 
+		self.data_server.calibration_data.clear()
 		self.is_calibrating.set(True)
-		self.calibration_data = None
 
 		# Empty data queue
 		while True:
@@ -483,7 +491,9 @@ class MainWin():
 		with open(CALIBRATION_FILE, 'w') as f:
 			json.dump(calibration_data, f)
 		
-		self.calibration_data = calibration_data
+		for k, v in calibration_data.items():
+			self.data_server.calibration_data[str(k)] = v
+
 		self.is_calibrating.set(False)
 
 		print('Calibration complete')
